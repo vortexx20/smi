@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#F4F0EA">
 <title>INSHA · Private chat</title>
 <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23B5452A'/><text x='50%' y='56%' font-family='Helvetica,Arial' font-size='14' font-weight='700' fill='white' text-anchor='middle' dominant-baseline='middle'>IN</text></svg>">
@@ -13,13 +13,17 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--bg:#F4F0EA;--panel:#FBF9F6;--card:#fff;--ink:#1C1A17;--mute:#756F66;--faint:#A8A196;--line:#E6E0D6;--acc:#B5452A;--acc2:#963620;--accsoft:rgba(181,69,42,.1);--in:#EFE9DF;--ok:#2E9A5B;--red:#D23B2E;--rail:#1C1A17;--sh:0 18px 40px -14px rgba(28,26,23,.28),0 0 0 1px rgba(28,26,23,.06);--font:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;--disp:'Bricolage Grotesque','Figtree',system-ui,sans-serif;--mono:ui-monospace,Menlo,Consolas,monospace;--spring:cubic-bezier(.32,.72,0,1);--ease:cubic-bezier(.25,.1,.25,1);color-scheme:light}
 [data-theme=dark]{--bg:#121110;--panel:#191816;--card:#232120;--ink:#F3EFE8;--mute:#A09A90;--faint:#6E695F;--line:#2E2C29;--acc:#D8603F;--acc2:#E87654;--accsoft:rgba(216,96,63,.16);--in:#2A2825;--rail:#0C0B0A;--sh:0 18px 40px -14px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.06);color-scheme:dark}
-html,body{height:100%;height:100dvh}
+html,body{height:100%;height:var(--app-h,100dvh)}
 body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;overflow:hidden;transition:background .3s;position:fixed;width:100%}
 button,input,textarea{font:inherit;color:inherit}button{cursor:pointer;background:none;border:none}
 .hidden{display:none!important}
 [data-lucide]{width:20px;height:20px;stroke-width:1.9;flex-shrink:0;pointer-events:none}
 .sm-i [data-lucide],[data-lucide].s{width:16px;height:16px}
-.frame{position:fixed;inset:0;display:flex;background:var(--bg);height:100dvh}
+.frame{position:fixed;top:var(--app-top,0px);left:0;right:0;height:var(--app-h,100dvh);display:flex;background:var(--bg)}
+/* Boot loader */
+.boot{flex:1;display:grid;place-items:center;height:100%}
+.boot .bs{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite}
+.mark{background:linear-gradient(145deg,var(--acc),var(--acc2));color:#fff;display:grid;place-items:center;font:800 22px var(--disp)}
 /* Pull-to-refresh indicator */
 .ptr{position:fixed;top:0;left:0;right:0;height:0;z-index:250;display:flex;align-items:center;justify-content:center;pointer-events:none;transition:height .2s var(--ease);overflow:hidden}
 .ptr.active{transition:none}
@@ -33,6 +37,7 @@ button,input,textarea{font:inherit;color:inherit}button{cursor:pointer;backgroun
 .mobile-refresh-btn{display:none;position:fixed;bottom:calc(80px + env(safe-area-inset-bottom,0px));right:20px;z-index:100;width:48px;height:48px;border-radius:50%;background:var(--panel);border:1px solid var(--line);box-shadow:var(--sh);align-items:center;justify-content:center;color:var(--acc);transition:transform .2s,background .2s}
 .mobile-refresh-btn:active{transform:scale(.9);background:var(--in)}
 @media(max-width:899px){.mobile-refresh-btn{display:flex}}
+body.keyboard-open .mobile-refresh-btn{display:none}
 /* gate */
 .gate{flex:1;display:grid;grid-template-columns:1fr;height:100%;animation:fade .4s}
 .art{display:none}
@@ -93,7 +98,7 @@ button,input,textarea{font:inherit;color:inherit}button{cursor:pointer;backgroun
 .sub{font-size:12.5px;color:var(--mute);margin-top:2px;display:flex;align-items:center;gap:6px}.sub i.dt{width:7px;height:7px;border-radius:50%;background:var(--faint);display:block}.sub.on{color:var(--ok)}.sub.on i.dt{background:var(--ok)}
 .searchbar{display:none;align-items:center;gap:10px;padding:10px 20px;background:var(--panel);border-bottom:1px solid var(--line)}.searchbar.show{display:flex}
 .searchbar input{flex:1;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);outline:none;font-size:14px}.searchbar input:focus{border-color:var(--acc)}.searchbar .c{font-size:12px;color:var(--mute);white-space:nowrap}
-.msgs{flex:1;overflow-y:auto;padding:22px clamp(14px,4vw,56px) 12px;display:flex;flex-direction:column;gap:3px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.msgs{flex:1;min-height:0;overflow-y:auto;padding:22px clamp(14px,4vw,56px) 12px;display:flex;flex-direction:column;gap:3px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .day{align-self:center;margin:14px 0 8px}.day span{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--mute);background:var(--panel);border:1px solid var(--line);padding:4px 12px;border-radius:20px;text-transform:uppercase}
 .row{display:flex;margin-top:2px;touch-action:pan-y}.row.grouped{margin-top:0}.row.out{justify-content:flex-end}.row.anim{animation:rise .35s var(--spring)}
 .row.drag{user-select:none}.wrap{max-width:min(78%,560px);display:flex;flex-direction:column;transition:transform .2s var(--spring)}.row.drag .wrap{transition:none}
@@ -110,8 +115,7 @@ button,input,textarea{font:inherit;color:inherit}button{cursor:pointer;backgroun
 .state{margin:auto;text-align:center;color:var(--mute);max-width:320px;line-height:1.55;display:flex;flex-direction:column;align-items:center;gap:12px;padding:24px}.state [data-lucide]{width:44px;height:44px;stroke-width:1.3;color:var(--faint)}.state h4{color:var(--ink);font:700 19px var(--disp)}
 .sk{height:38px;border-radius:19px;background:linear-gradient(90deg,var(--in),var(--line),var(--in));background-size:200% 100%;animation:shim 1.4s linear infinite;width:55%;margin-top:6px}.sk.r{align-self:flex-end;width:40%}
 /* composer & keyboard handling */
-.cw{flex-shrink:0;background:var(--panel);border-top:1px solid var(--line);position:relative;z-index:30;padding-bottom:env(safe-area-inset-bottom,0px);transition:padding-bottom .15s ease-out}
-body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+.cw{flex-shrink:0;background:var(--panel);border-top:1px solid var(--line);position:relative;z-index:30}
 .rbar{display:none;align-items:center;gap:10px;padding:8px clamp(12px,4vw,24px);border-bottom:1px solid var(--line);background:var(--in)}.rbar.show{display:flex}
 .rbar .tx{flex:1;min-width:0}.rbar b{display:block;font-size:12px;color:var(--acc)}.rbar span{display:block;font-size:13px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .comp{display:flex;align-items:flex-end;gap:8px;padding:10px clamp(12px,4vw,24px) 12px}
@@ -127,7 +131,7 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
 .qi{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;width:100%;text-align:left;font-size:14.5px}.qi:hover{background:var(--in)}.qi span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.qi [data-lucide]{color:var(--acc)}
 .ql{max-height:200px;overflow-y:auto}.qe{text-align:center;color:var(--mute);font-size:13px;padding:14px}
 .qa{display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}.qa input{flex:1;min-width:0;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-size:14px;outline:none}.qa button{padding:0 14px;border-radius:10px;background:var(--acc);color:#fff;font-weight:600;font-size:13px}
-#emojiPop{padding:0;overflow:hidden;left:clamp(12px,4vw,70px);width:min(calc(100vw - 24px),352px);height:min(380px,calc(100dvh - 200px));border-radius:16px}
+#emojiPop{padding:0;overflow:hidden;left:clamp(12px,4vw,70px);width:min(calc(100vw - 24px),352px);height:min(380px,calc(var(--app-h,100dvh) - 200px));border-radius:16px}
 .emoji-picker-container{width:100%;height:100%;display:flex;flex-direction:column;background:var(--card);border-radius:16px;overflow:hidden}
 .emoji-picker-header{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);flex-shrink:0}
 .emoji-search{flex:1;padding:8px 12px;border-radius:20px;border:1px solid var(--line);background:var(--in);font-size:14px;outline:none}
@@ -153,7 +157,7 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
 .banner{position:absolute;z-index:190;top:14px;left:14px;right:14px;max-width:380px;margin-left:auto;background:var(--ink);color:var(--bg);border-radius:16px;box-shadow:var(--sh);padding:12px 16px;transform:translateY(-160%);transition:transform .5s var(--spring);cursor:pointer;top:calc(14px + env(safe-area-inset-top,0px))}.banner.show{transform:none}
 .banner b{display:flex;justify-content:space-between;font-size:13.5px}.banner em{font-style:normal;font-size:11px;opacity:.6}.banner p{font-size:13px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 .modal{position:absolute;inset:0;z-index:170;background:rgba(20,18,15,.45);backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}.modal.show{opacity:1;pointer-events:auto}
-.sheet{background:var(--panel);width:100%;max-width:440px;border-radius:26px 26px 0 0;padding:20px 20px calc(22px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .4s var(--spring);max-height:92vh;overflow-y:auto}.modal.show .sheet{transform:none}
+.sheet{background:var(--panel);width:100%;max-width:440px;border-radius:26px 26px 0 0;padding:20px 20px calc(22px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .4s var(--spring);max-height:92%;overflow-y:auto}.modal.show .sheet{transform:none}
 @media(min-width:900px){.modal{align-items:center}.sheet{border-radius:22px;transform:translateY(14px) scale(.97)}}
 .sheet h3{font:800 21px var(--disp);letter-spacing:-.03em;text-align:center;margin-bottom:6px}.sheet>p{color:var(--mute);font-size:14px;text-align:center;margin-bottom:18px;line-height:1.5}
 .acts{display:flex;gap:10px;margin-top:6px}.acts button{flex:1;padding:14px;border-radius:12px;font-weight:600;min-height:48px;background:var(--in)}.acts .p{background:var(--acc);color:#fff}.acts .d{background:var(--red);color:#fff}
@@ -169,7 +173,9 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
 .nav{position:absolute;z-index:40;left:0;top:0;bottom:0;transform:translateX(-102%);transition:transform .42s var(--spring);box-shadow:20px 0 60px -20px rgba(0,0,0,.35);max-width:94vw}.nav.open{transform:none}
 .list{width:min(78vw,320px)}.scrim{display:block;position:absolute;inset:0;z-index:35;background:rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .3s}.scrim.show{opacity:1;pointer-events:auto}
 .menu{display:grid;margin-left:-6px}.head{padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0px))}}
-.cw .comp{gap:6px;padding:8px clamp(10px,3vw,18px) calc(8px + env(safe-area-inset-bottom,0px))}
+/* Composer layout: sits ~10px above the keyboard (WhatsApp-style); safe-area only when keyboard is closed */
+.cw .comp{gap:6px;padding:8px clamp(10px,3vw,18px) calc(10px + env(safe-area-inset-bottom,0px))}
+body.keyboard-open .cw .comp{padding-bottom:10px}
 .cw .comp .input-wrapper{flex:1;display:flex;align-items:flex-end;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:4px 4px 4px 14px;min-width:0;transition:border-color .2s,box-shadow .2s}
 .cw .comp .input-wrapper:focus-within{border-color:var(--acc);box-shadow:0 0 0 3px var(--accsoft)}
 .cw .comp .input-wrapper textarea{flex:1;border:none;background:transparent;padding:9px 0;margin:0;min-height:38px;max-height:120px;border-radius:0;font-size:16px;line-height:1.35;outline:none;resize:none}
@@ -178,7 +184,6 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
 .cw .comp .input-wrapper .send:active{transform:scale(.9)}
 .cw .comp .input-wrapper .send:disabled{opacity:.4}
 .cw .comp .circ{width:38px;height:38px;min-width:38px;margin-bottom:2px}
-.cw{position:relative}
 #quickPop{bottom:calc(100% + 8px)}
 #emojiPop{bottom:calc(100% + 8px)}
 @keyframes fade{from{opacity:0}to{opacity:1}}@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}@keyframes pop{from{opacity:0;transform:scale(.7) rotate(-8deg)}to{opacity:1;transform:none}}@keyframes pop2{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}@keyframes sweep{0%{transform:translateX(-100%)}100%{transform:translateX(280%)}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{50%{opacity:.4}}@keyframes shim{to{background-position:-200% 0}}@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
@@ -197,8 +202,11 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
 
 <div class="frame" id="frame">
 
+<!-- BOOT LOADER (shown until Firebase restores the session) -->
+<div class="boot" id="bootScreen"><div class="bs"></div></div>
+
 <!-- AUTH -->
-<div class="gate" id="authScreen">
+<div class="gate hidden" id="authScreen">
   <div class="art"><div class="brand">INSHA</div><div><h2>A chat for two. Nobody else.</h2><ul style="margin-top:28px"><li><i data-lucide="lock"></i>One private conversation, locked to two paired accounts.</li><li><i data-lucide="zap"></i>Messages arrive in real time on laptop and phone.</li><li><i data-lucide="shield-check"></i>Pair once with a code. No contact lists, no strangers.</li></ul></div><small style="color:#8b857b">© INSHA Private Messaging</small></div>
   <div class="gmain">
     <h2 class="t" id="authTitle">Welcome back</h2><p class="s" id="authSub">Sign in to continue your private chat.</p>
@@ -290,7 +298,7 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
       <form class="comp" id="composer">
         <button class="circ" type="button" id="plusBtn" aria-label="Quick messages"><i data-lucide="plus"></i></button>
         <div class="input-wrapper">
-          <textarea id="msgInput" rows="1" maxlength="2000" placeholder="Write a message" disabled></textarea>
+          <textarea id="msgInput" rows="1" maxlength="2000" enterkeyhint="send" autocapitalize="sentences" placeholder="Write a message" disabled></textarea>
           <button class="send" id="sendBtn" type="submit" aria-label="Send" disabled><i data-lucide="send-horizontal"></i></button>
         </div>
       </form>
@@ -352,9 +360,9 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
     storageBucket: "insha-5077d.firebasestorage.app", messagingSenderId: "557464728268", appId: "1:557464728268:web:1624ca47b0dcfbf6bd4869", measurementId: "G-4RHJB80J4H"
   });
   const auth = getAuth(app);
-  // FIX: Ensure session persists across refresh
+  // Ensure session persists across refresh (local persistence is the default; this makes it explicit)
   setPersistence(auth, browserLocalPersistence).catch(console.error);
-  
+
   window.__fb = { auth, db: getFirestore(app), createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, doc, setDoc, getDoc, getDocs, collection, query, where, addDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp };
   window.dispatchEvent(new Event('fb-ready'));
 </script>
@@ -370,43 +378,34 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
   const I = (n, c) => `<i data-lucide="${n}" class="${c || ''}"></i>`;
   const DEFAULT_QR = ['Thinking of you', 'Call when free', 'On my way'];
   const STALE_MS = 300000, ONLINE_MS = 40000, t0 = Date.now();
-  const BOOT_TIMEOUT_MS = 3000; // 3 seconds timeout
+  const BOOT_TIMEOUT_MS = 10000;
   const mobile = () => window.matchMedia('(max-width:899px)').matches;
 
-  const S = { user: null, profile: null, partner: null, registering: false, authMode: 'login', quick: [...DEFAULT_QR], soundOn: true, deskOn: false,
+  const S = { user: null, profile: null, partner: null, registering: false, freshLogin: false, enteredUid: null, authMode: 'login', quick: [...DEFAULT_QR], soundOn: true, deskOn: false,
     msgs: new Map(), loadedIn: false, loadedOut: false, ready: false, drawn: new Set(), unsubIn: null, unsubOut: null, unsubProfile: null, unsubPeer: null,
     lastPartnerId: undefined, unread: 0, theme: 'system', pin: null, bioEnabled: false, autoLock: true, locked: false, pinAttempt: '',
     replyTo: null, searchQuery: '', partnerAlias: null, myAvatarDataUrl: null, myDisplayName: null, hiddenMsgIds: new Set(), editingMsgId: null,
     booted: false, route: 'boot', authResolved: false };
 
-  /* ---------- ROUTING (no splash) ---------- */
+  /* ---------- ROUTING ---------- */
   function setRoute(name) { S.route = name; }
   function safeShow(...ids) {
-    ['authScreen','pairScreen','appScreen'].forEach((i) => {
+    ['bootScreen','authScreen','pairScreen','appScreen'].forEach((i) => {
       const el = $(i);
       if (el) el.classList.toggle('hidden', !ids.includes(i));
     });
   }
-  
-  // FIXED: Only go to auth if user is truly null. Do not wipe session.
-  function fallbackToAuth(reason) {
+
+  // Only show the sign-in screen when we are truly not inside the app. Never wipes a session.
+  function fallbackToAuth(reason, msg) {
     console.warn('[fallback]', reason);
-    if (S.user) {
-      console.log('[fallback] user exists, keeping session alive, routing to app');
-      safeShow('appScreen');
-      return;
-    }
-    try { stopChat(); } catch(e){}
-    try { if (S.unsubProfile) S.unsubProfile(); } catch(e){}
-    try { if (S.unsubPeer) S.unsubPeer(); } catch(e){}
-    try { stopRequests(); } catch(e){}
-    S.profile = null; S.partner = null; S.lastPartnerId = undefined;
+    if (S.user && S.profile) return; // already inside the app, don't disturb it
     setRoute('auth');
     safeShow('authScreen');
     setAuthMode('login');
-    ri();
     const err = $('authErr');
-    if (err) { err.textContent = 'Session could not be restored. Please sign in again.'; err.classList.add('show'); }
+    if (msg && err) { err.textContent = msg; err.classList.add('show'); }
+    ri();
   }
 
   /* ---------- MOBILE RELOAD BUTTON ---------- */
@@ -415,7 +414,6 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
     if (btn) {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
-        // Add a little spin animation
         const icon = btn.querySelector('[data-lucide]');
         if (icon) icon.style.animation = 'spin 0.5s linear infinite';
         setTimeout(() => { window.location.reload(); }, 100);
@@ -426,28 +424,23 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
 
   /* ---------- KEYBOARD HANDLING (Visual Viewport API) ---------- */
   function setupKeyboardHandling() {
-    if (!window.visualViewport) return;
-    const vv = window.visualViewport;
-    let rafId = null;
-    function updateKeyboardState() {
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        const keyboardHeight = window.innerHeight - vv.height;
-        const isKeyboardOpen = keyboardHeight > 100;
-        if (isKeyboardOpen) {
-          document.body.classList.add('keyboard-open');
-          document.body.style.setProperty('--keyboard-height', keyboardHeight + 'px');
-          const msgs = document.getElementById('msgs');
-          if (msgs && S.profile?.partnerId) msgs.scrollTop = msgs.scrollHeight;
-        } else {
-          document.body.classList.remove('keyboard-open');
-          document.body.style.removeProperty('--keyboard-height');
-        }
-      });
-    }
-    vv.addEventListener('resize', updateKeyboardState);
-    vv.addEventListener('scroll', updateKeyboardState);
-    updateKeyboardState();
+    const root = document.documentElement, vv = window.visualViewport;
+    let baseH = window.innerHeight, lastW = window.innerWidth;
+    const apply = () => {
+      const h = vv ? vv.height : window.innerHeight, top = vv ? vv.offsetTop : 0;
+      if (window.innerWidth !== lastW) { lastW = window.innerWidth; baseH = window.innerHeight; } // rotation
+      baseH = Math.max(baseH, window.innerHeight, h);
+      const open = baseH - h > 150;
+      root.style.setProperty('--app-h', Math.round(h) + 'px');
+      root.style.setProperty('--app-top', Math.round(top) + 'px');
+      document.body.classList.toggle('keyboard-open', open);
+      if (open) { const m = $('msgs'); if (m) m.scrollTop = m.scrollHeight; }
+    };
+    if (vv) { vv.addEventListener('resize', apply); vv.addEventListener('scroll', apply); }
+    window.addEventListener('resize', apply);
+    window.addEventListener('orientationchange', () => setTimeout(apply, 300));
+    const ta = $('msgInput'); if (ta) ta.addEventListener('focus', () => setTimeout(apply, 250));
+    apply();
   }
 
   /* ---------- PULL TO REFRESH ---------- */
@@ -490,6 +483,8 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
     window.addEventListener('touchstart', (e) => {
       if (e.touches.length !== 1) return;
       if ($('lockScreen').classList.contains('show')) return;
+      if (document.body.classList.contains('keyboard-open')) return;
+      if (e.target.closest && e.target.closest('.cw, .modal, .pop, .lock')) return;
       if (!isAnyScrollableAtTop(e)) return;
       ptr.startY = e.touches[0].clientY;
       ptr.pulling = true; ptr.triggered = false; ptr.dist = 0;
@@ -983,11 +978,23 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
     if (S.profile.partnerId) { safeShow('appScreen'); setRoute('app'); }
     else { safeShow('pairScreen'); setRoute('pair'); }
     ri();
-    if (S.pin && !S.registering) setTimeout(openLock, 300);
+    if (S.pin && !S.registering && !S.freshLogin) setTimeout(openLock, 300);
+  }
+  // Dedupes concurrent entries (auth listener + login form) and always surfaces failures.
+  let enterJob = null;
+  function enterOnce(user, name) {
+    if (S.enteredUid === user.uid) return Promise.resolve();
+    if (enterJob && enterJob.uid === user.uid) return enterJob.p;
+    const p = enter(user, name)
+      .then(() => { S.enteredUid = user.uid; })
+      .catch((e) => { if (!S.profile) S.user = null; throw e; })
+      .finally(() => { if (enterJob && enterJob.p === p) enterJob = null; });
+    enterJob = { uid: user.uid, p };
+    return p;
   }
   function leave() {
     if (S.unsubProfile) S.unsubProfile(); if (S.unsubPeer) S.unsubPeer(); S.unsubProfile = S.unsubPeer = null; stopRequests(); stopChat();
-    Object.assign(S, { sentName: null, reqShown: null, user: null, profile: null, partner: null, quick: [...DEFAULT_QR], soundOn: true, deskOn: false, lastPartnerId: undefined, replyTo: null, editingMsgId: null, partnerAlias: null, myDisplayName: null, myAvatarDataUrl: null, hiddenMsgIds: new Set() });
+    Object.assign(S, { sentName: null, reqShown: null, user: null, profile: null, partner: null, enteredUid: null, quick: [...DEFAULT_QR], soundOn: true, deskOn: false, lastPartnerId: undefined, replyTo: null, editingMsgId: null, partnerAlias: null, myDisplayName: null, myAvatarDataUrl: null, hiddenMsgIds: new Set() });
     clearUnread(); openSide(false); safeShow('authScreen'); setRoute('auth'); setAuthMode('login'); ri();
   }
   function setAuthMode(m) {
@@ -1003,12 +1010,19 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
     if (!email || !pass) return authErr('Please enter email and password.'); if (S.authMode === 'register' && !name) return authErr('Please enter your name.'); if (pass.length < 6) return authErr('Password must be at least 6 characters.');
     const { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword } = window.__fb; setBusy($('authBtn'), true);
     try {
-      if (S.authMode === 'register') { S.registering = true; const c = await createUserWithEmailAndPassword(auth, email, pass); await enter(c.user, name); S.registering = false; }
-      else await signInWithEmailAndPassword(auth, email, pass);
+      S.freshLogin = true;
+      if (S.authMode === 'register') {
+        S.registering = true;
+        const c = await createUserWithEmailAndPassword(auth, email, pass);
+        await enterOnce(c.user, name);
+      } else {
+        const c = await signInWithEmailAndPassword(auth, email, pass);
+        await enterOnce(c.user); // explicit redirect, no reliance on the auth listener alone
+      }
     } catch (err) {
-      S.registering = false; const c = err.code;
+      const c = err.code;
       authErr(c === 'auth/email-already-in-use' ? 'Email already registered. Try signing in.' : ['auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found'].includes(c) ? 'Invalid email or password.' : c === 'auth/weak-password' ? 'Password too weak (min 6 characters).' : c === 'auth/network-request-failed' ? 'Network error. Check your connection.' : err.message || 'Authentication failed.');
-    } finally { setBusy($('authBtn'), false); }
+    } finally { S.registering = false; S.freshLogin = false; setBusy($('authBtn'), false); }
   }
   async function doPair(inp, btn) {
     const code = inp.value.trim(); if (!code) return banner('No code', "Enter your partner's code."); setBusy(btn, true);
@@ -1077,7 +1091,21 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
     $('menuBtn').onclick = toggleSide; $('sideClose').onclick = () => openSide(false); $('scrim').onclick = () => openSide(false);
     const ta = $('msgInput'), touch = window.matchMedia('(pointer: coarse)');
     ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 120) + 'px'; });
-    ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !touch.matches) { e.preventDefault(); $('composer').requestSubmit(); } });
+
+    /* Enter = Send (desktop: Shift+Enter makes a newline; mobile: newline disabled) */
+    let shiftHeld = false;
+    const submitNow = () => $('composer').requestSubmit();
+    ta.addEventListener('keydown', (e) => {
+      shiftHeld = e.shiftKey;
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); submitNow(); }
+    });
+    ta.addEventListener('keyup', (e) => { shiftHeld = e.shiftKey; });
+    ta.addEventListener('beforeinput', (e) => { // catches Android/iOS virtual keyboards that don't report key === 'Enter'
+      if (e.inputType === 'insertLineBreak' && !(shiftHeld && !touch.matches)) { e.preventDefault(); submitNow(); }
+    });
+    // keep the keyboard open when tapping the Send button
+    $('sendBtn').addEventListener('mousedown', (e) => e.preventDefault());
+
     $('composer').addEventListener('submit', (e) => { e.preventDefault(); const v = ta.value; ta.value = ''; ta.style.height = 'auto'; send(v); ta.focus(); closePops(); });
     const addQr = () => { const v = $('qrInput').value.trim(); if (!v) return; S.quick.push(v.slice(0, 60)); $('qrInput').value = ''; savePrefs(); renderSide(); renderQuickList(); };
     $('qrAdd').onclick = addQr; $('qrInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addQr(); } });
@@ -1107,8 +1135,7 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
     $('mNo').onclick = () => closeModal(false); $('mYes').onclick = () => closeModal(true);
 
     $('plusBtn').addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); togglePop('quickPop'); });
-    $('emojiBtn').addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); togglePop('emojiPop'); });
-    document.addEventListener('click', (e) => { if (!e.target.closest('.pop') && !e.target.closest('#plusBtn') && !e.target.closest('#emojiBtn') && !e.target.closest('#emojiCloseBtn')) closePops(); });
+    document.addEventListener('click', (e) => { if (!e.target.closest('.pop') && !e.target.closest('#plusBtn') && !e.target.closest('#emojiCloseBtn')) closePops(); });
     document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b' && !$('appScreen').classList.contains('hidden')) { e.preventDefault(); toggleSide(); } });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closePops(); closeCtx(); } });
     $('qpList').addEventListener('click', (e) => { const b = e.target.closest('[data-q]'); if (!b) return; send(S.quick[Number(b.dataset.q)]); closePops(); });
@@ -1121,54 +1148,39 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
     $('qpAdd').onclick = addQ; $('qpInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addQ(); } });
   }
 
-  /* ---------- BOOT: PERSISTENT SESSION & TIMEOUT ---------- */
+  /* ---------- BOOT: PERSISTENT SESSION ---------- */
   function boot() {
     if (S.booted) return;
     S.booted = true;
-    applyTheme(localStorage.getItem('insha_theme') || 'system');
-    if (localStorage.getItem('insha_side') === '0') $('nav').classList.add('collapsed');
-    loadLockPrefs();
-    bind();
-    bindPullToRefresh();
-    setupKeyboardHandling();
-    setupMobileRefresh();
-    setAuthMode('login');
-    ri();
-
-    // Boot timeout: If Firebase takes more than 3s, fallback gracefully
-    const bootTimer = setTimeout(() => {
-      if (!S.authResolved) {
-        console.warn('[boot] auth timeout');
-        S.authResolved = true;
-        fallbackToAuth('boot-timeout');
-      }
-    }, BOOT_TIMEOUT_MS);
-
     const { auth, onAuthStateChanged } = window.__fb;
-    
-    // FIXED: Proper session handling on refresh
+
+    // If Firebase is slow, fall back to the sign-in form but KEEP listening for the restored session.
+    const bootTimer = setTimeout(() => { if (!S.authResolved) fallbackToAuth('boot-timeout'); }, BOOT_TIMEOUT_MS);
+
+    // Register the auth listener FIRST, so a failure in any UI setup step can never break session restore.
     onAuthStateChanged(auth, async (user) => {
       if (S.registering) return;
-      
-      // Mark auth as resolved to cancel boot timeout
       S.authResolved = true;
       clearTimeout(bootTimer);
-
       try {
-        if (user) {
-          // User is signed in (or session was restored from localStorage)
-          console.log('[auth] User session restored:', user.uid);
-          await enter(user);
-        } else {
-          // User is truly signed out
-          console.log('[auth] No active session');
-          leave();
-        }
+        if (user) await enterOnce(user);
+        else leave();
       } catch (e) {
-        console.error('[auth] Error entering app:', e);
-        fallbackToAuth('enter-failed');
+        console.error('[auth] enter failed:', e);
+        fallbackToAuth('enter-failed', 'Could not load your account: ' + (e.message || e.code || 'unknown error'));
       }
     });
+
+    const safe = (fn) => { try { fn(); } catch (e) { console.error('[boot step]', e); } };
+    safe(() => applyTheme(localStorage.getItem('insha_theme') || 'system'));
+    safe(() => { if (localStorage.getItem('insha_side') === '0') $('nav').classList.add('collapsed'); });
+    safe(loadLockPrefs);
+    safe(bind);
+    safe(bindPullToRefresh);
+    safe(setupKeyboardHandling);
+    safe(setupMobileRefresh);
+    safe(() => setAuthMode('login'));
+    ri();
   }
 
   applyTheme(localStorage.getItem('insha_theme') || 'system');
@@ -1177,7 +1189,7 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
     if (window.__fb) boot();
     else {
       window.addEventListener('fb-ready', boot, { once: true });
-      setTimeout(() => { if (!S.booted) { S.authResolved = true; fallbackToAuth('fb-timeout'); } }, BOOT_TIMEOUT_MS + 2000);
+      setTimeout(() => { if (!S.booted) fallbackToAuth('fb-timeout', 'Could not reach Firebase. Check your connection and reload.'); }, BOOT_TIMEOUT_MS + 2000);
     }
   };
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', start) : start();
