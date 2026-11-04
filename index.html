@@ -1149,6 +1149,7 @@ button {
   gap: 3px;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
 .day {
@@ -1248,26 +1249,6 @@ button {
   float: right;
   margin: 7px 0 0 10px;
 }
-
-/* Read receipt indicator */
-.read-receipt {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 10.5px;
-  font-weight: 600;
-  margin-left: 6px;
-  opacity: 0.85;
-}
-.read-receipt [data-lucide] {
-  width: 12px;
-  height: 12px;
-  stroke-width: 2.4;
-}
-.read-receipt.read { color: #0a7d5a; }
-.row.in .read-receipt.read { color: #34D399; }
-.read-receipt.sent { color: #6B7280; }
-.row.in .read-receipt.sent { color: #9CA3AF; }
 
 .bub mark {
   background: rgba(255, 190, 50, 0.55);
@@ -2378,9 +2359,29 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
     unsubIn: null, unsubOut: null, unsubProfile: null, unsubPeer: null,
     lastPartnerId: undefined, unread: 0, pin: null, bioEnabled: false, autoLock: true, locked: false, pinAttempt: '',
     replyTo: null, searchQuery: '', partnerAlias: null, hiddenMsgIds: new Set(), editingMsgId: null,
-    booted: false, route: 'boot', authResolved: false, notifyAsked: false,
-    partnerLastReadAt: 0
+    booted: false, route: 'boot', authResolved: false, notifyAsked: false
   };
+
+  /* ---------- AUTO-SCROLL ---------- */
+  // Force scroll to bottom. Used everywhere a new message lands.
+  let scrollRaf = null;
+  function scrollToBottom(force) {
+    const box = $('msgs');
+    if (!box) return;
+    const near = box.scrollHeight - box.scrollTop - box.clientHeight < 160;
+    if (!force && !near) return;
+    // Two-frame defer so layout settles (bubbles grow after images/icons render).
+    cancelAnimationFrame(scrollRaf);
+    scrollRaf = requestAnimationFrame(() => {
+      requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; });
+    });
+  }
+  // Some browsers need a second nudge after smooth scrolling settles.
+  function hardScrollToBottom() {
+    const box = $('msgs');
+    if (!box) return;
+    box.scrollTop = box.scrollHeight;
+  }
 
   /* ---------- NOTIFICATION PERMISSION ---------- */
   async function askNotificationPermission() {
@@ -2448,12 +2449,12 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
       root.style.setProperty('--app-h', Math.round(h) + 'px');
       root.style.setProperty('--app-top', Math.round(top) + 'px');
       document.body.classList.toggle('keyboard-open', open);
-      if (open) { const m = $('msgs'); if (m) m.scrollTop = m.scrollHeight; }
+      if (open) scrollToBottom(true);
     };
     if (vv) { vv.addEventListener('resize', apply); vv.addEventListener('scroll', apply); }
     window.addEventListener('resize', apply);
-    window.addEventListener('orientationchange', () => setTimeout(apply, 300));
-    const ta = $('msgInput'); if (ta) ta.addEventListener('focus', () => setTimeout(apply, 250));
+    window.addEventListener('orientationchange', () => setTimeout(() => { apply(); scrollToBottom(true); }, 300));
+    const ta = $('msgInput'); if (ta) ta.addEventListener('focus', () => setTimeout(() => { apply(); scrollToBottom(true); }, 250));
     apply();
   }
 
@@ -2701,7 +2702,7 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
     if (document.hidden) {
       setPresence(false);
       if (S.autoLock && S.pin && S.user) bgT = setTimeout(() => { if (document.hidden) openLock(); }, 120000);
-    } else { clearTimeout(bgT); clearUnread(); beat(); markChatRead(); }
+    } else { clearTimeout(bgT); clearUnread(); beat(); scrollToBottom(true); }
   });
 
   /* Settings / nav */
@@ -2817,36 +2818,6 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
     return m < 1 ? 'Offline' : m < 60 ? `Last seen ${m}m ago` : `Last seen ${fmtTime(l)}`;
   }
 
-  /* ---------- READ RECEIPTS ---------- */
-  // Mark our side of the chat as read up to now. Updates user doc with lastReadAt.
-  let mrT = null;
-  async function markChatRead() {
-    if (!S.user || !S.profile?.partnerId) return;
-    if (document.hidden) return;
-    clearTimeout(mrT);
-    mrT = setTimeout(async () => {
-      try {
-        const { doc, updateDoc, db, auth } = window.__fb;
-        await updateDoc(doc(db, 'users', auth.currentUser.uid), { lastReadAt: Date.now() });
-      } catch (e) { /* silent */ }
-    }, 400);
-  }
-  function partnerReadAt() {
-    if (!S.partner) return 0;
-    return S.partner.lastReadAt || 0;
-  }
-  function readReceiptHTML(m) {
-    if (m.dir !== 'out') return '';
-    if (m.pending) {
-      return `<span class="read-receipt sent">Sending…</span>`;
-    }
-    const partnerRead = partnerReadAt();
-    if (partnerRead && partnerRead >= m.ts) {
-      return `<span class="read-receipt read">${I('check-check', 's')}Read</span>`;
-    }
-    return `<span class="read-receipt sent">${I('check', 's')}Sent</span>`;
-  }
-
   function watchProfile() {
     const { doc, onSnapshot, db, auth } = window.__fb;
     if (S.unsubProfile) S.unsubProfile();
@@ -2870,8 +2841,7 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
                 window.__fb.updateDoc(doc(db, 'users', me2), { partnerId: null }).catch(() => {});
               }
               S.partner = { uid: pid, ...pd };
-              S.partnerLastReadAt = pd.lastReadAt || 0;
-              renderHead(); renderList(); renderPair(); renderChat();
+              renderHead(); renderList(); renderPair();
             }
           }, () => { S.peerPoll = true; });
         }
@@ -2881,7 +2851,6 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
           closeM('reconModal'); closeM('reqModal'); S.sentName = null;
           if (prevPid === null) banner('Connected', 'You are now connected. Say hello.');
           setRoute('app');
-          markChatRead();
         }
         if (prevPid && !pid) {
           $('reconCode').textContent = S.profile.partnerCode || '-';
@@ -2926,14 +2895,17 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
         if (!silent) alertIncoming(m);
       });
       saveSeen(me, seen); S.loadedIn = true; settle();
-      if (anyNew) markChatRead();
+      // Always scroll to bottom when a new incoming message lands.
+      if (anyNew) scrollToBottom(true);
     }, (e) => { console.error(e); fbFail(e, 'Sync error'); });
     S.unsubOut = onSnapshot(query(collection(db, 'messages'), where('senderId', '==', me), where('receiverId', '==', pid)), (snap) => {
+      let anyNew = false;
       snap.docChanges().forEach((ch) => {
         if (ch.type === 'removed') S.msgs.delete(ch.doc.id);
-        else S.msgs.set(ch.doc.id, toMsg(ch.doc, 'out'));
+        else { S.msgs.set(ch.doc.id, toMsg(ch.doc, 'out')); anyNew = true; }
       });
       S.loadedOut = true; settle();
+      if (anyNew) scrollToBottom(true);
     }, (e) => console.error(e));
   }
   function settle() { renderChat(); renderList(); if (S.loadedIn && S.loadedOut) S.ready = true; }
@@ -2946,14 +2918,11 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
         try { new Notification(pname(), { body: m.text, tag: 'insha-msg', icon: 'favicon.ico', requireInteraction: false }); } catch (e) {}
       }
       vibrate([200, 100, 200]);
-    } else {
-      vibrate([100, 50, 100]);
-      markChatRead();
-    }
+    } else vibrate([100, 50, 100]);
     banner(pname(), m.text); chime();
   }
   const clearUnread = () => { S.unread = 0; document.title = 'INSHA · Private chat'; renderList(); };
-  window.addEventListener('focus', () => { clearUnread(); markChatRead(); });
+  window.addEventListener('focus', () => { clearUnread(); scrollToBottom(true); });
 
   async function send(raw) {
     const text = (raw || '').trim(); if (!text) return;
@@ -2962,11 +2931,13 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
     try {
       if (S.editingMsgId) {
         await updateDoc(doc(db, 'messages', S.editingMsgId), { text: text.slice(0, 2000), edited: true, editedAt: serverTimestamp() });
-        clearReply(); return;
+        clearReply(); scrollToBottom(true); return;
       }
       const payload = { senderId: auth.currentUser.uid, receiverId: pid, text: text.slice(0, 2000), type: 'normal', status: 'sent', timestamp: serverTimestamp() };
       if (S.replyTo) payload.replyTo = { id: S.replyTo.id, text: S.replyTo.text.slice(0, 120), name: S.replyTo.dir === 'out' ? 'You' : pname() };
-      clearReply(); await addDoc(collection(db, 'messages'), payload);
+      clearReply();
+      await addDoc(collection(db, 'messages'), payload);
+      scrollToBottom(true);
     } catch (e) { banner('Send failed', e.message); }
   }
 
@@ -2983,7 +2954,8 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
   }
   const visible = () => [...S.msgs.values()].filter((m) => !S.hiddenMsgIds.has(m.id)).sort((a, b) => a.ts - b.ts);
   function renderChat() {
-    const box = $('msgs'), near = box.scrollHeight - box.scrollTop - box.clientHeight < 160;
+    const box = $('msgs');
+    const near = box.scrollHeight - box.scrollTop - box.clientHeight < 160;
     if (!S.profile?.partnerId) {
       box.innerHTML = `<div class="state">${I('lock')}<h4>Not paired yet</h4><span>Enter your partner's code to open your private chat.</span><button class="sbtn" id="pairNow" style="padding:0 20px">Pair now</button></div>`;
       $('pairNow').onclick = () => (mobile() ? openSide(true) : (expandSide(), setTimeout(() => $('sidePair').focus(), 350)));
@@ -3006,13 +2978,13 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
       const anim = S.ready && !S.drawn.has(m.id) ? ' anim' : '';
       const rp = m.replyTo ? `<div class="rp"><b>${esc(m.replyTo.name || '')}</b><span>${esc((m.replyTo.text || '').slice(0, 80))}</span></div>` : '';
       const fw = m.forwarded ? `<div class="fw">${I('forward', 's')}Forwarded</div>` : '';
-      const receipt = readReceiptHTML(m);
-      const meta = `<span class="meta">${m.edited ? '<em>edited</em>' : ''}${fmtTime(m.ts)}${receipt}<button class="db" data-dots="${m.id}" aria-label="Message options">${I('chevron-down')}</button></span>`;
+      const meta = `<span class="meta">${m.edited ? '<em>edited</em>' : ''}${fmtTime(m.ts)}<button class="db" data-dots="${m.id}" aria-label="Message options">${I('chevron-down')}</button></span>`;
       html += `<div class="row ${m.dir}${grouped ? ' grouped' : ''}${anim}" data-msg="${m.id}"><div class="wrap"><div class="bub">${rp}${fw}${hl(m.text, q)}${meta}</div></div></div>`;
       S.drawn.add(m.id); prev = m;
     });
     box.innerHTML = html; ri();
-    if (near || !S.ready) box.scrollTop = box.scrollHeight;
+    // Auto-scroll: always bottom when we first render or user was already at bottom.
+    if (near || !S.ready) scrollToBottom(true);
   }
   function renderComposer() {
     const on = !!S.profile?.partnerId;
@@ -3142,7 +3114,7 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
       const pid = S.profile?.partnerId; if (!pid) return;
       try {
         await addDoc(collection(db, 'messages'), { senderId: auth.currentUser.uid, receiverId: pid, text: m.text, type: 'normal', status: 'sent', timestamp: serverTimestamp(), forwarded: true });
-        banner('Forwarded', 'Message sent.'); closeM('forwardModal');
+        banner('Forwarded', 'Message sent.'); closeM('forwardModal'); scrollToBottom(true);
       } catch (e) { banner('Forward failed', e.message); }
     };
   }
@@ -3300,7 +3272,7 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
     watchProfile(); watchRequests();
     renderSide(); renderHead(); renderPair(); renderList(); beat();
     syncNotifyBtn();
-    if (S.profile.partnerId) { safeShow('appScreen'); setRoute('app'); markChatRead(); }
+    if (S.profile.partnerId) { safeShow('appScreen'); setRoute('app'); }
     else { safeShow('pairScreen'); setRoute('pair'); }
     ri();
     if (S.pin && !S.registering && !S.freshLogin) setTimeout(openLock, 300);
@@ -3324,8 +3296,7 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
     Object.assign(S, {
       sentName: null, reqShown: null, user: null, profile: null, partner: null, enteredUid: null,
       quick: [...DEFAULT_QR], soundOn: true, deskOn: false, lastPartnerId: undefined,
-      replyTo: null, editingMsgId: null, partnerAlias: null, hiddenMsgIds: new Set(),
-      partnerLastReadAt: 0
+      replyTo: null, editingMsgId: null, partnerAlias: null, hiddenMsgIds: new Set()
     });
     clearUnread(); openSide(false); safeShow('authScreen'); setRoute('auth'); setAuthMode('login'); ri();
   }
@@ -3429,6 +3400,8 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
       e.preventDefault();
       const v = ta.value; ta.value = ''; ta.style.height = 'auto';
       send(v); ta.focus(); closePops();
+      // Ensure we jump to the bottom right after the send click.
+      requestAnimationFrame(() => scrollToBottom(true));
     });
     const addQr = () => { const v = $('qrInput').value.trim(); if (!v) return; S.quick.push(v.slice(0, 60)); $('qrInput').value = ''; savePrefs(); renderSide(); renderQuickList(); };
     $('qrAdd').onclick = addQr;
@@ -3520,6 +3493,13 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
       }
       syncNotifyBtn();
     });
+
+    /* Re-scroll to bottom when images inside bubbles finish loading */
+    document.addEventListener('load', (e) => {
+      if (e.target && e.target.tagName === 'IMG' && e.target.closest && e.target.closest('#msgs')) {
+        scrollToBottom(true);
+      }
+    }, true);
   }
 
   /* Boot */
