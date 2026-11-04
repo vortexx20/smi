@@ -119,9 +119,23 @@ button,input,textarea{font:inherit;color:inherit}button{cursor:pointer;backgroun
 .qi{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;width:100%;text-align:left;font-size:14.5px}.qi:hover{background:var(--in)}.qi span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.qi [data-lucide]{color:var(--acc)}
 .ql{max-height:200px;overflow-y:auto}.qe{text-align:center;color:var(--mute);font-size:13px;padding:14px}
 .qa{display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}.qa input{flex:1;min-width:0;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-size:14px;outline:none}.qa button{padding:0 14px;border-radius:10px;background:var(--acc);color:#fff;font-weight:600;font-size:13px}
-#emojiPop{padding:0;overflow:hidden;left:clamp(12px,4vw,70px)}
-emoji-picker{--background:var(--card);--border-color:var(--line);--indicator-color:var(--acc);--input-border-color:var(--line);--num-columns:8;width:min(calc(100vw - 24px),352px);height:380px}
-emoji-picker.dark{--background:#232120;--border-color:#2E2C29;--input-font-color:#f3efe8;--category-font-color:#a09a90;--button-hover-background:#34312e;--button-active-background:#3f3b37}
+#emojiPop{padding:0;overflow:hidden;left:clamp(12px,4vw,70px);width:min(calc(100vw - 24px),352px);height:380px;border-radius:16px}
+/* WhatsApp-style emoji picker container */
+.emoji-picker-container{width:100%;height:100%;display:flex;flex-direction:column;background:var(--card);border-radius:16px;overflow:hidden}
+.emoji-picker-header{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);flex-shrink:0}
+.emoji-search{flex:1;padding:8px 12px;border-radius:20px;border:1px solid var(--line);background:var(--in);font-size:14px;outline:none}
+.emoji-search:focus{border-color:var(--acc)}
+.emoji-close{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:var(--mute)}
+.emoji-close:hover{background:var(--in)}
+.emoji-cats{display:flex;gap:2px;padding:6px 8px;border-bottom:1px solid var(--line);overflow-x:auto;flex-shrink:0;scrollbar-width:none}
+.emoji-cats::-webkit-scrollbar{display:none}
+.emoji-cat-btn{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:20px;flex-shrink:0;transition:background .15s}
+.emoji-cat-btn:hover{background:var(--in)}.emoji-cat-btn.active{background:var(--accsoft)}
+.emoji-grid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(8,1fr);gap:2px;padding:8px;align-content:start}
+.emoji-grid button{aspect-ratio:1;border-radius:10px;display:grid;place-items:center;font-size:24px;transition:background .12s,transform .1s}
+.emoji-grid button:hover{background:var(--in)}.emoji-grid button:active{transform:scale(.85)}
+.emoji-grid .cat-label{grid-column:1/-1;font-size:11px;font-weight:700;color:var(--mute);text-transform:uppercase;letter-spacing:.06em;padding:10px 4px 4px;text-align:left}
+.emoji-empty{grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--mute);font-size:14px}
 .ctx{position:fixed;z-index:150;min-width:190px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:6px;display:none;animation:pop2 .18s var(--spring)}.ctx.show{display:block}
 .ci{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:500;width:100%;text-align:left}.ci:hover{background:var(--in)}.ci [data-lucide]{width:16px;height:16px;color:var(--mute)}.ci.dg,.ci.dg [data-lucide]{color:var(--red)}.sep{height:1px;background:var(--line);margin:4px 8px}
 .lock{position:absolute;inset:0;z-index:180;background:var(--bg);display:none;flex-direction:column;justify-content:center;align-items:center;gap:20px;padding:32px;text-align:center}.lock.show{display:flex}
@@ -148,8 +162,27 @@ emoji-picker.dark{--background:#232120;--border-color:#2E2C29;--input-font-color
 .nav{position:absolute;z-index:40;left:0;top:0;bottom:0;transform:translateX(-102%);transition:transform .42s var(--spring);box-shadow:20px 0 60px -20px rgba(0,0,0,.35);max-width:94vw}.nav.open{transform:none}
 .list{width:min(78vw,320px)}.scrim{display:block;position:absolute;inset:0;z-index:35;background:rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .3s}.scrim.show{opacity:1;pointer-events:auto}
 .menu{display:grid;margin-left:-6px}.head{padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0px))}}
+/* WhatsApp-style composer: send button inside the input bar */
+.cw .comp{gap:6px;padding:8px clamp(10px,3vw,18px) calc(8px + env(safe-area-inset-bottom,0px))}
+.cw .comp .input-wrapper{flex:1;display:flex;align-items:flex-end;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:4px 4px 4px 14px;min-width:0;transition:border-color .2s,box-shadow .2s}
+.cw .comp .input-wrapper:focus-within{border-color:var(--acc);box-shadow:0 0 0 3px var(--accsoft)}
+.cw .comp .input-wrapper textarea{flex:1;border:none;background:transparent;padding:9px 0;margin:0;min-height:38px;max-height:120px;border-radius:0;font-size:16px;line-height:1.35;outline:none;resize:none}
+.cw .comp .input-wrapper textarea:focus{box-shadow:none;border:none}
+.cw .comp .input-wrapper .send{width:38px;height:38px;min-width:38px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;flex-shrink:0;transition:transform .15s,opacity .15s;margin-bottom:2px}
+.cw .comp .input-wrapper .send:active{transform:scale(.9)}
+.cw .comp .input-wrapper .send:disabled{opacity:.4}
+.cw .comp .circ{width:38px;height:38px;min-width:38px;margin-bottom:2px}
+.cw .comp .circ:last-of-type{margin-right:0}
+/* keep the existing popover positions relative to composer */
+.cw{position:relative}
+#quickPop{bottom:calc(100% + 8px)}
+#emojiPop{bottom:calc(100% + 8px)}
 @keyframes fade{from{opacity:0}to{opacity:1}}@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}@keyframes pop{from{opacity:0;transform:scale(.7) rotate(-8deg)}to{opacity:1;transform:none}}@keyframes pop2{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:none}}@keyframes sweep{0%{transform:translateX(-100%)}100%{transform:translateX(280%)}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{50%{opacity:.4}}@keyframes shim{to{background-position:-200% 0}}@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+/* keyboard-friendly safe area on mobile */
+@supports(padding: max(0px)) {
+  .cw{padding-bottom:max(0px, env(safe-area-inset-bottom))}
+}
 </style>
 </head>
 <body>
@@ -236,13 +269,24 @@ emoji-picker.dark{--background:#232120;--border-color:#2E2C29;--input-font-color
         <div class="ql" id="qpList"></div>
         <div class="qa"><input id="qpInput" maxlength="60" placeholder="Add a quick reply"><button id="qpAdd" type="button">Add</button></div>
       </div>
-      <div class="pop" id="emojiPop"><emoji-picker id="emojiEl"></emoji-picker></div>
+      <!-- WhatsApp-style emoji picker container -->
+      <div class="pop" id="emojiPop">
+        <div class="emoji-picker-container">
+          <div class="emoji-picker-header">
+            <input class="emoji-search" id="emojiSearchInput" placeholder="Search emoji…" autocomplete="off">
+            <button class="emoji-close" id="emojiCloseBtn" aria-label="Close emoji picker"><i data-lucide="x" class="s"></i></button>
+          </div>
+          <div class="emoji-cats" id="emojiCats"></div>
+          <div class="emoji-grid" id="emojiGrid"></div>
+        </div>
+      </div>
       <div class="rbar" id="replyBar"><i data-lucide="reply" class="s" id="rbIcon" style="color:var(--acc)"></i><div class="tx"><b id="replyName">Replying to</b><span id="replyText"></span></div><button class="ib" id="replyCancel" aria-label="Cancel"><i data-lucide="x" class="s"></i></button></div>
       <form class="comp" id="composer">
         <button class="circ" type="button" id="plusBtn" aria-label="Quick messages"><i data-lucide="plus"></i></button>
-        <button class="circ" type="button" id="emojiBtn" aria-label="Emoji"><i data-lucide="smile"></i></button>
-        <textarea id="msgInput" rows="1" maxlength="2000" placeholder="Write a message" disabled></textarea>
-        <button class="send" id="sendBtn" type="submit" aria-label="Send" disabled><i data-lucide="send-horizontal"></i></button>
+        <div class="input-wrapper">
+          <textarea id="msgInput" rows="1" maxlength="2000" placeholder="Write a message" disabled></textarea>
+          <button class="send" id="sendBtn" type="submit" aria-label="Send" disabled><i data-lucide="send-horizontal"></i></button>
+        </div>
       </form>
     </div>
   </main>
@@ -304,7 +348,6 @@ emoji-picker.dark{--background:#232120;--border-color:#2E2C29;--input-font-color
   window.__fb = { auth: getAuth(app), db: getFirestore(app), createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, doc, setDoc, getDoc, getDocs, collection, query, where, addDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp };
   window.dispatchEvent(new Event('fb-ready'));
 </script>
-<script type="module">import "https://cdn.jsdelivr.net/npm/emoji-picker-element@1.22.8/index.js";</script>
 
 <script>
 (function () {
@@ -331,7 +374,6 @@ emoji-picker.dark{--background:#232120;--border-color:#2E2C29;--input-font-color
     const a = t === 'system' ? (sys ? 'dark' : 'light') : t;
     document.documentElement.setAttribute('data-theme', a);
     document.querySelector('meta[name="theme-color"]').setAttribute('content', a === 'dark' ? '#121110' : '#F4F0EA');
-    $('emojiEl').classList.toggle('dark', a === 'dark');
     $('rTheme').innerHTML = I(a === 'dark' ? 'sun' : 'moon'); ri();
     $('themeSub').textContent = t === 'system' ? 'Follow system' : t === 'dark' ? 'Dark' : 'Light';
     document.querySelectorAll('[data-theme-set]').forEach((b) => b.classList.toggle('on', b.dataset.themeSet === t));
@@ -351,6 +393,8 @@ emoji-picker.dark{--background:#232120;--border-color:#2E2C29;--input-font-color
     if (!S.soundOn) return;
     try { unlockAudio(); const t = audio.currentTime; [880, 1175].forEach((f, i) => { const o = audio.createOscillator(), g = audio.createGain(); o.frequency.value = f; o.connect(g); g.connect(audio.destination); g.gain.setValueAtTime(.0001, t + i * .12); g.gain.exponentialRampToValueAtTime(.12, t + i * .12 + .02); g.gain.exponentialRampToValueAtTime(.0001, t + i * .12 + .28); o.start(t + i * .12); o.stop(t + i * .12 + .3); }); } catch (e) {}
   }
+  // Vibration helper
+  const vibrate = (pattern) => { if (!S.soundOn) return; try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {} };
 
   /* Modals */
   const openM = (id) => $(id).classList.add('show'), closeM = (id) => $(id).classList.remove('show');
@@ -456,7 +500,7 @@ emoji-picker.dark{--background:#232120;--border-color:#2E2C29;--input-font-color
   const expandSide = () => { $('nav').classList.remove('collapsed'); localStorage.setItem('insha_side', '1'); };
   const toggleSide = () => { if (mobile()) return openSide(!$('nav').classList.contains('open')); const c = $('nav').classList.toggle('collapsed'); localStorage.setItem('insha_side', c ? '0' : '1'); };
 
-  /* Firebase data layer (unchanged logic) */
+  /* Firebase data layer */
   function makeCode() { const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = 'INSHA-'; for (let i = 0; i < 4; i++) s += c[Math.floor(Math.random() * c.length)]; return s; }
   async function getProfile(uid) { const { doc, getDoc, db } = window.__fb; const s = await getDoc(doc(db, 'users', uid)); return s.exists() ? s.data() : null; }
   async function ensureProfile(user, name) {
@@ -465,7 +509,6 @@ emoji-picker.dark{--background:#232120;--border-color:#2E2C29;--input-font-color
     p = { displayName: name || (user.email || 'user').split('@')[0], email: user.email, partnerCode: makeCode(), partnerId: null };
     await setDoc(doc(db, 'users', user.uid), { ...p, createdAt: serverTimestamp() }); return p;
   }
-  /* Pairing via pair_requests: every user only ever writes their OWN user document (no cross-user writes). */
   function fbFail(e, title) {
     if (e && (e.code === 'permission-denied' || /permission/i.test(e.message || ''))) confirmBox('Firestore rules need updating', 'Firebase blocked this action. Open Firebase Console > Firestore Database > Rules, paste the contents of the firestore.rules file that came with this app, then press Publish and try again.', 'Got it');
     else banner(title, (e && e.message) || 'Something went wrong.');
@@ -528,7 +571,6 @@ emoji-picker.dark{--background:#232120;--border-color:#2E2C29;--input-font-color
     await updateDoc(doc(db, 'users', me), { partnerId: null });
     try { await deleteDoc(doc(db, 'partner_connections', [me, pid].sort().join('_'))); } catch (e) {}
   }
-  /* Presence (heartbeat on own user doc; partner's lastSeen read via the same profile read) */
   async function setPresence(on) { if (!S.user) return; try { const { doc, updateDoc, db, auth } = window.__fb; await updateDoc(doc(db, 'users', auth.currentUser.uid), { online: on, lastSeen: Date.now() }); } catch (e) {} }
   const beat = () => { if (!document.hidden) return setPresence(true); };
   window.addEventListener('pagehide', () => setPresence(false)); window.addEventListener('beforeunload', () => setPresence(false));
@@ -578,7 +620,16 @@ emoji-picker.dark{--background:#232120;--border-color:#2E2C29;--input-font-color
   function settle() { renderChat(); renderList(); if (S.loadedIn && S.loadedOut) S.ready = true; }
   const pname = () => S.partnerAlias || S.partner?.displayName || 'Partner';
   function alertIncoming(m) {
-    if (document.hidden) { S.unread++; document.title = `(${S.unread}) INSHA · Private chat`; if (S.deskOn && 'Notification' in window && Notification.permission === 'granted') { try { new Notification(pname(), { body: m.text, tag: 'insha-msg' }); } catch (e) {} } }
+    // WhatsApp-style: sound + vibration
+    if (document.hidden) {
+      S.unread++; document.title = `(${S.unread}) INSHA · Private chat`;
+      if (S.deskOn && 'Notification' in window && Notification.permission === 'granted') { try { new Notification(pname(), { body: m.text, tag: 'insha-msg', icon: '/favicon.ico' }); } catch (e) {} }
+      // vibrate pattern for background notifications
+      vibrate([200, 100, 200]);
+    } else {
+      // in-app: vibrate briefly and play sound
+      vibrate([100, 50, 100]);
+    }
     banner(pname(), m.text); chime();
   }
   const clearUnread = () => { S.unread = 0; document.title = 'INSHA · Private chat'; renderList(); };
@@ -802,27 +853,92 @@ emoji-picker.dark{--background:#232120;--border-color:#2E2C29;--input-font-color
   const closePops = () => { $('quickPop').classList.remove('show'); $('emojiPop').classList.remove('show'); $('plusBtn').classList.remove('rot'); };
   function togglePop(which) {
     const el = $(which), open = !el.classList.contains('show'); closePops();
-    if (open) { el.classList.add('show'); if (which === 'quickPop') { $('plusBtn').classList.add('rot'); renderQuickList(); if (!mobile()) setTimeout(() => $('qpInput').focus(), 60); } }
+    if (open) {
+      el.classList.add('show');
+      if (which === 'quickPop') { $('plusBtn').classList.add('rot'); renderQuickList(); if (!mobile()) setTimeout(() => $('qpInput').focus(), 60); }
+      if (which === 'emojiPop') { buildEmojiPicker(); }
+    }
   }
   function insertAtCursor(txt) {
     const ta = $('msgInput'); if (ta.disabled) return; const s = ta.selectionStart ?? ta.value.length, e = ta.selectionEnd ?? s;
     ta.value = ta.value.slice(0, s) + txt + ta.value.slice(e); const p = s + txt.length; ta.focus(); ta.setSelectionRange(p, p); ta.dispatchEvent(new Event('input'));
   }
-  function buildPops() {
-    $('plusBtn').addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); togglePop('quickPop'); });
-    $('emojiBtn').addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); togglePop('emojiPop'); });
-    document.addEventListener('click', (e) => { if (!e.target.closest('.pop') && !e.target.closest('#plusBtn') && !e.target.closest('#emojiBtn')) closePops(); });
-    document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b' && !$('appScreen').classList.contains('hidden')) { e.preventDefault(); toggleSide(); } });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closePops(); closeCtx(); } });
-    $('emojiEl').addEventListener('emoji-click', (e) => insertAtCursor(e.detail.unicode || ''));
-    $('qpList').addEventListener('click', (e) => { const b = e.target.closest('[data-q]'); if (!b) return; send(S.quick[Number(b.dataset.q)]); closePops(); });
-    $('quickPop').addEventListener('click', (e) => {
-      const c = e.target.closest('[data-ins]'); if (!c) return; const k = c.dataset.ins;
-      if (k === 'emoji') return togglePop('emojiPop');
-      insertAtCursor(k === 'time' ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })); closePops();
+
+  /* WhatsApp-style emoji picker */
+  const EMOJI_CATEGORIES = [
+    { id: 'smileys', icon: '😀', label: 'Smileys', emojis: ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥳','😏','😒','😞','😔','😟','😕','🙁','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾'] },
+    { id: 'people', icon: '👋', label: 'People', emojis: ['👋','🤚','🖐️','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦵','🦶','👂','🦻','👃','🧠','🦷','🦴','👀','👁️','👅','👄','💋','🩸','👶','🧒','👦','👧','🧑','👱','👨','🧔','👩','🧓','👴','👵','🙍','🙎','🙅','🙆','💁','🙋','🧏','🙇','🤦','🤷','👮','🕵️','💂','🥷','👷','🤴','👸','👳','👲','🧕','🤵','👰','🤰','🤱','👼','🎅','🤶','🦸','🦹','🧙','🧚','🧛','🧜','🧝','🧞','🧟','💆','💇','🚶','🧍','🧎','🏃','💃','🕺','🕴️','👯','🧖','🧗','🤺','🏇','⛷️','🏂','🏌️','🏄','🚣','🏊','⛹️','🏋️','🚴','🚵','🤸','🤼','🤽','🤾','🤹','🧘','🛀','🛌','🧑‍🤝‍🧑','👭','👫','👬','💏','💑','👪','👨‍👩‍👦','👨‍👩‍👧','👨‍👩‍👧‍👦','👨‍👩‍👦‍👦','👨‍👩‍👧‍👧'] },
+    { id: 'nature', icon: '🐶', label: 'Nature', emojis: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🐣','🐥','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟','🦗','🕷️','🕸️','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆','🦓','🦍','🦧','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🦮','🐈','🐓','🦃','🦚','🦜','🦢','🦩','🕊️','🐇','🦝','🦨','🦡','🦦','🦥','🐁','🐀','🐿️','🦔','🐾','🐉','🐲','🌵','🎄','🌲','🌳','🌴','🌱','🌿','☘️','🍀','🎍','🎋','🍃','🍂','🍁','🍄','🐚','🌾','💐','🌷','🌹','🥀','🌺','🌸','🌼','🌻','🌞','🌝','🌚','🌙','🌎','🌍','🌏','🪐','💫','⭐','🌟','✨','⚡','☄️','💥','🔥','🌪️','🌈','☀️','🌤️','⛅','🌥️','☁️','🌦️','🌧️','⛈️','🌩️','🌨️','❄️','☃️','⛄','🌬️','💨','💧','💦','☔','☂️','🌊','🌫️'] },
+    { id: 'food', icon: '🍔', label: 'Food', emojis: ['🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶️','🫑','🌽','🥕','🫒','🧄','🧅','🥔','🍠','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🦴','🌭','🍔','🍟','🍕','🫓','🥪','🥙','🧆','🌮','🌯','🫔','🥗','🥘','🫕','🥫','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🦪','🍤','🍙','🍚','🍘','🍥','🥠','🥮','🍢','🍡','🍧','🍨','🍦','🥧','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🥛','🍼','☕','🫖','🍵','🧃','🥤','🧋','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🧉','🍾','🧊','🥄','🍴','🍽️','🥣','🥡','🥢','🧂'] },
+    { id: 'activity', icon: '⚽', label: 'Activity', emojis: ['⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🪀','🏓','🏸','🏒','🏑','🥍','🏏','🪃','🥅','⛳','🪁','🏹','🎣','🤿','🥊','🥋','🎽','🛹','🛼','🛷','⛸️','🥌','🎿','⛷️','🏂','🪂','🏋️','🤼','🤸','⛹️','🤺','🤾','🏌️','🏇','🧘','🏄','🏊','🤽','🚣','🧗','🚵','🚴','🏆','🥇','🥈','🥉','🏅','🎖️','🏵️','🎗️','🎫','🎟️','🎪','🤹','🎭','🩰','🎨','🎬','🎤','🎧','🎼','🎹','🥁','🪘','🎷','🎺','🪗','🎸','🪕','🎻','🎲','♟️','🎯','🎳','🎮','🎰','🧩'] },
+    { id: 'travel', icon: '🚗', label: 'Travel', emojis: ['🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🛻','🚚','🚛','🚜','🦯','🦽','🦼','🛴','🚲','🛵','🏍️','🛺','🚨','🚔','🚍','🚘','🚖','🚡','🚠','🚟','🚃','🚋','🚞','🚝','🚄','🚅','🚈','🚂','🚆','🚇','🚊','🚉','✈️','🛫','🛬','🛩️','💺','🛰️','🚀','🛸','🚁','🛶','⛵','🚤','🛥️','🛳️','⛴️','🚢','⚓','🪝','⛽','🚧','🚦','🚥','🚏','🗺️','🗿','🗽','🗼','🏰','🏯','🏟️','🎡','🎢','🎠','⛲','⛱️','🏖️','🏝️','🏜️','🌋','⛰️','🏔️','🗻','🏕️','⛺','🛖','🏠','🏡','🏘️','🏚️','🏗️','🏭','🏢','🏬','🏣','🏤','🏥','🏦','🏨','🏪','🏫','🏩','💒','🏛️','⛪','🕌','🕍','🛕','🕋','⛩️','🛤️','🛣️','🗾','🎑','🏞️','🌅','🌄','🌠','🎇','🎆','🌇','🌆','🏙️','🌃','🌌','🌉','🌁'] },
+    { id: 'objects', icon: '💡', label: 'Objects', emojis: ['⌚','📱','📲','💻','⌨️','🖥️','🖨️','🖱️','🖲️','🕹️','🗜️','💽','💾','💿','📀','📼','📷','📸','📹','🎥','📽️','🎞️','📞','☎️','📟','📠','📺','📻','🎙️','🎚️','🎛️','🧭','⏱️','⏲️','⏰','🕰️','⌛','⏳','📡','🔋','🪫','🔌','💡','🔦','🕯️','🪔','🧯','🛢️','💸','💵','💴','💶','💷','🪙','💰','💳','💎','⚖️','🪜','🧰','🪛','🔧','🔨','⚒️','🛠️','⛏️','🪚','🔩','⚙️','🪤','🧱','⛓️','🧲','🔫','💣','🧨','🪓','🔪','🗡️','⚔️','🛡️','🚬','⚰️','🪦','⚱️','🏺','🔮','📿','🧿','💈','⚗️','🔭','🔬','🕳️','🩹','🩺','💊','💉','🩸','🧬','🦠','🧫','🧪','🌡️','🧹','🪠','🧺','🧻','🚽','🚰','🚿','🛁','🛀','🧼','🪥','🪒','🧽','🪣','🧴','🛎️','🔑','🗝️','🚪','🪑','🛋️','🛏️','🛌','🧸','🪆','🖼️','🪞','🪟','🛍️','🛒','🎁','🎈','🎏','🎀','🪄','🪙','🧧','🔮','🎐','🧿','📩','📨','📧','💌','📥','📤','📦','🏷️','🪧','📪','📫','📬','📭','📮','📯','📜','📃','📄','📑','🧾','📊','📈','📉','🗒️','🗓️','📆','📅','🗑️','📇','🗃️','🗳️','🗄️','📋','📁','📂','🗂️','🗞️','📰','📓','📔','📒','📕','📗','📘','📙','📚','📖','🔖','🧷','🔗','📎','🖇️','📐','📏','🧮','📌','📍','✂️','🖊️','🖋️','✒️','🖌️','🖍️','📝','✏️','🔍','🔎','🔏','🔐','🔒','🔓'] },
+    { id: 'symbols', icon: '❤️', label: 'Symbols', emojis: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉️','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','🆔','⚛️','🉑','☢️','☣️','📴','📳','📶','📳','📴','🈶','🈚','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️','🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️','🆘','❌','⭕','🛑','⛔','📛','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞','📵','🚭','❗','❕','❓','❔','‼️','⁉️','🔅','🔆','〽️','⚠️','🚸','🔱','⚜️','🔰','♻️','✅','🈯','💹','❇️','✳️','❎','🌐','💠','Ⓜ️','🌀','💤','🏧','🚾','♿','🅿️','🛗','🈳','🈂️','🛂','🛃','🛄','🛅','🚹','🚺','🚼','⚧️','🚻','🚮','🎦','📶','🈁','🔣','ℹ️','🔤','🔡','🔠','🆖','🆗','🆙','🆒','🆕','🆓','0️⃣','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟','🔢','#️⃣','*️⃣','⏏️','▶️','⏸️','⏯️','⏹️','⏺️','⏭️','⏮️','⏩','⏪','⏫','⏬','◀️','🔼','🔽','➡️','⬅️','⬆️','⬇️','↗️','↘️','↙️','↖️','↕️','↔️','↩️','↪️','⤴️','⤵️','🔀','🔁','🔂','🔄','🔃','🎵','🎶','➕','➖','➗','✖️','🟰','♾️','💲','💱','™️','©️','®️','👁️‍🗨️','🔚','🔙','🔛','🔝','🔜','〰️','➰','➿','✔️','☑️','🔘','🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤','🔺','🔻','🔸','🔹','🔶','🔷','🔳','🔲','▪️','▫️','◾','◽','◼️','◻️','🟥','🟧','🟨','🟩','🟦','🟪','⬛','⬜','🟫','🔈','🔇','🔉','🔊','🔔','🔕','📣','📢','💬','💭','🗯️','♠️','♣️','♥️','♦️','🃏','🎴','🀄','🕐','🕑','🕒','🕓','🕔','🕕','🕖','🕗','🕘','🕙','🕚','🕛'] }
+  ];
+  let emojiCategoryState = 'smileys';
+  function buildEmojiPicker() {
+    const cats = $('emojiCats'), grid = $('emojiGrid'), search = $('emojiSearchInput');
+    // Build category tabs
+    cats.innerHTML = EMOJI_CATEGORIES.map((c) => `<button class="emoji-cat-btn${c.id === emojiCategoryState ? ' active' : ''}" data-cat="${c.id}" title="${c.label}">${c.icon}</button>`).join('');
+    cats.querySelectorAll('.emoji-cat-btn').forEach((btn) => {
+      btn.onclick = () => { emojiCategoryState = btn.dataset.cat; search.value = ''; buildEmojiGrid(''); cats.querySelectorAll('.emoji-cat-btn').forEach((b) => b.classList.toggle('active', b.dataset.cat === emojiCategoryState)); };
     });
-    const addQ = () => { const v = $('qpInput').value.trim(); if (!v) return; S.quick.push(v.slice(0, 60)); $('qpInput').value = ''; savePrefs(); renderQuickList(); renderSide(); };
-    $('qpAdd').onclick = addQ; $('qpInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addQ(); } });
+    // Build grid with current category
+    buildEmojiGrid('');
+    // Search handler
+    search.oninput = () => { buildEmojiGrid(search.value.trim().toLowerCase()); };
+    $('emojiCloseBtn').onclick = () => closePops();
+    ri();
+  }
+  function buildEmojiGrid(query) {
+    const grid = $('emojiGrid');
+    if (query) {
+      // search all categories
+      let results = [];
+      EMOJI_CATEGORIES.forEach((c) => { c.emojis.forEach((e) => { if (e.toLowerCase().includes(query) || (c.label.toLowerCase().includes(query) && !results.includes(e))) results.push(e); }); });
+      results = [...new Set(results)].slice(0, 200);
+      grid.innerHTML = results.length ? results.map((e) => `<button type="button" data-emoji="${e}">${e}</button>`).join('') : '<div class="emoji-empty">No emoji found for "' + esc(query) + '"</div>';
+    } else {
+      const cat = EMOJI_CATEGORIES.find((c) => c.id === emojiCategoryState) || EMOJI_CATEGORIES[0];
+      grid.innerHTML = `<div class="cat-label">${cat.label}</div>` + cat.emojis.map((e) => `<button type="button" data-emoji="${e}">${e}</button>`).join('');
+    }
+    grid.querySelectorAll('[data-emoji]').forEach((btn) => { btn.onclick = () => { insertAtCursor(btn.dataset.emoji); }; });
+  }
+
+  /* Service Worker registration & push notifications */
+  async function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      console.log('[SW] registered', reg.scope);
+      // Subscribe to push notifications if permission granted
+      if ('Notification' in window && Notification.permission === 'granted') {
+        await subscribePush(reg);
+      } else if ('Notification' in window && Notification.permission !== 'denied') {
+        const perm = await Notification.requestPermission();
+        if (perm === 'granted') await subscribePush(reg);
+      }
+    } catch (e) { console.warn('[SW] registration failed', e); }
+  }
+  async function subscribePush(reg) {
+    try {
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array('BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8')
+      });
+      console.log('[Push] subscribed', sub.endpoint);
+      // In a real app, send `sub` to your backend server to save it.
+      // Here we just log it.
+      window.__pushSubscription = sub;
+    } catch (e) { console.warn('[Push] subscribe failed', e); }
+  }
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+    return outputArray;
   }
 
   function bind() {
@@ -833,7 +949,7 @@ emoji-picker.dark{--background:#232120;--border-color:#2E2C29;--input-font-color
     $('pairSkip').onclick = () => { show('appScreen'); renderChat(); ri(); }; $('pairLogout').onclick = async () => { await setPresence(false); window.__fb.signOut(window.__fb.auth); };
     $('menuBtn').onclick = toggleSide; $('sideClose').onclick = () => openSide(false); $('scrim').onclick = () => openSide(false);
     const ta = $('msgInput'), touch = window.matchMedia('(pointer: coarse)');
-    ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px'; });
+    ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 120) + 'px'; });
     ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !touch.matches) { e.preventDefault(); $('composer').requestSubmit(); } });
     $('composer').addEventListener('submit', (e) => { e.preventDefault(); const v = ta.value; ta.value = ''; ta.style.height = 'auto'; send(v); ta.focus(); closePops(); });
     const addQr = () => { const v = $('qrInput').value.trim(); if (!v) return; S.quick.push(v.slice(0, 60)); $('qrInput').value = ''; savePrefs(); renderSide(); renderQuickList(); };
@@ -849,6 +965,8 @@ emoji-picker.dark{--background:#232120;--border-color:#2E2C29;--input-font-color
         if (!('Notification' in window)) { e.target.checked = false; return banner('Not supported', 'This browser has no desktop alerts.'); }
         const r = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
         if (r !== 'granted') { e.target.checked = false; S.deskOn = false; savePrefs(); return banner('Blocked', 'Allow notifications in your browser.'); }
+        // Register SW and subscribe to push for background notifications
+        await registerServiceWorker();
       }
       S.deskOn = e.target.checked; savePrefs();
     });
@@ -862,11 +980,27 @@ emoji-picker.dark{--background:#232120;--border-color:#2E2C29;--input-font-color
     $('reqAccept').onclick = async () => { const r = S.reqIn; if (!r) return closeM('reqModal'); setBusy($('reqAccept'), true); try { await acceptRequest(r); closeM('reqModal'); } catch (e) { fbFail(e, 'Could not connect'); } finally { setBusy($('reqAccept'), false); } };
     $('reqDecline').onclick = async () => { const r = S.reqIn; closeM('reqModal'); if (r) await declineRequest(r); };
     $('mNo').onclick = () => closeModal(false); $('mYes').onclick = () => closeModal(true);
+
+    // Popovers: plus/emoji
+    $('plusBtn').addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); togglePop('quickPop'); });
+    $('emojiBtn').addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); togglePop('emojiPop'); });
+    document.addEventListener('click', (e) => { if (!e.target.closest('.pop') && !e.target.closest('#plusBtn') && !e.target.closest('#emojiBtn') && !e.target.closest('#emojiCloseBtn')) closePops(); });
+    document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b' && !$('appScreen').classList.contains('hidden')) { e.preventDefault(); toggleSide(); } });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closePops(); closeCtx(); } });
+    $('qpList').addEventListener('click', (e) => { const b = e.target.closest('[data-q]'); if (!b) return; send(S.quick[Number(b.dataset.q)]); closePops(); });
+    $('quickPop').addEventListener('click', (e) => {
+      const c = e.target.closest('[data-ins]'); if (!c) return; const k = c.dataset.ins;
+      if (k === 'emoji') return togglePop('emojiPop');
+      insertAtCursor(k === 'time' ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })); closePops();
+    });
+    const addQ = () => { const v = $('qpInput').value.trim(); if (!v) return; S.quick.push(v.slice(0, 60)); $('qpInput').value = ''; savePrefs(); renderQuickList(); renderSide(); };
+    $('qpAdd').onclick = addQ; $('qpInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addQ(); } });
   }
 
   function endSplash(cb) { setTimeout(() => { $('splash').classList.add('out'); cb(); }, Math.max(0, MIN_SPLASH - (Date.now() - t0))); }
   function boot() {
-    applyTheme(localStorage.getItem('insha_theme') || 'system'); if (localStorage.getItem('insha_side') === '0') $('nav').classList.add('collapsed'); loadLockPrefs(); bind(); buildPops(); setAuthMode('login'); ri();
+    applyTheme(localStorage.getItem('insha_theme') || 'system'); if (localStorage.getItem('insha_side') === '0') $('nav').classList.add('collapsed'); loadLockPrefs(); bind(); setAuthMode('login'); ri();
+    registerServiceWorker(); // Register SW and request notification permission for push
     const { auth, onAuthStateChanged } = window.__fb; let first = true;
     onAuthStateChanged(auth, async (user) => {
       if (S.registering) return;
