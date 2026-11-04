@@ -29,6 +29,10 @@ button,input,textarea{font:inherit;color:inherit}button{cursor:pointer;backgroun
 .ptr.refreshing .spinner{opacity:1}
 .ptr .ptr-text{font-size:13px;font-weight:600;color:var(--mute)}
 .ptr.refreshing .ptr-text{color:var(--acc)}
+/* Floating Mobile Refresh Button */
+.mobile-refresh-btn{display:none;position:fixed;bottom:calc(80px + env(safe-area-inset-bottom,0px));right:20px;z-index:100;width:48px;height:48px;border-radius:50%;background:var(--panel);border:1px solid var(--line);box-shadow:var(--sh);align-items:center;justify-content:center;color:var(--acc);transition:transform .2s,background .2s}
+.mobile-refresh-btn:active{transform:scale(.9);background:var(--in)}
+@media(max-width:899px){.mobile-refresh-btn{display:flex}}
 /* gate */
 .gate{flex:1;display:grid;grid-template-columns:1fr;height:100%;animation:fade .4s}
 .art{display:none}
@@ -186,6 +190,11 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
 <!-- Pull-to-refresh indicator -->
 <div class="ptr" id="ptr"><div class="ptr-inner"><div class="spinner"></div><span class="ptr-text" id="ptrText">Pull to refresh</span></div></div>
 
+<!-- Floating Mobile Refresh Button -->
+<button class="mobile-refresh-btn" id="mobileRefreshBtn" aria-label="Refresh page" title="Refresh">
+  <i data-lucide="refresh-cw"></i>
+</button>
+
 <div class="frame" id="frame">
 
 <!-- AUTH -->
@@ -336,13 +345,17 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
   import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where, addDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
   const app = initializeApp({
     apiKey: "AIzaSyAB6oQOkOZUCDspV1l3WvEvAEPlg1rGEXo", authDomain: "insha-5077d.firebaseapp.com", projectId: "insha-5077d",
     storageBucket: "insha-5077d.firebasestorage.app", messagingSenderId: "557464728268", appId: "1:557464728268:web:1624ca47b0dcfbf6bd4869", measurementId: "G-4RHJB80J4H"
   });
-  window.__fb = { auth: getAuth(app), db: getFirestore(app), createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, doc, setDoc, getDoc, getDocs, collection, query, where, addDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp };
+  const auth = getAuth(app);
+  // FIX: Ensure session persists across refresh
+  setPersistence(auth, browserLocalPersistence).catch(console.error);
+  
+  window.__fb = { auth, db: getFirestore(app), createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, doc, setDoc, getDoc, getDocs, collection, query, where, addDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp };
   window.dispatchEvent(new Event('fb-ready'));
 </script>
 
@@ -357,14 +370,14 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
   const I = (n, c) => `<i data-lucide="${n}" class="${c || ''}"></i>`;
   const DEFAULT_QR = ['Thinking of you', 'Call when free', 'On my way'];
   const STALE_MS = 300000, ONLINE_MS = 40000, t0 = Date.now();
-  const BOOT_TIMEOUT_MS = 2500; // quick fallback: 2.5s
+  const BOOT_TIMEOUT_MS = 3000; // 3 seconds timeout
   const mobile = () => window.matchMedia('(max-width:899px)').matches;
 
   const S = { user: null, profile: null, partner: null, registering: false, authMode: 'login', quick: [...DEFAULT_QR], soundOn: true, deskOn: false,
     msgs: new Map(), loadedIn: false, loadedOut: false, ready: false, drawn: new Set(), unsubIn: null, unsubOut: null, unsubProfile: null, unsubPeer: null,
     lastPartnerId: undefined, unread: 0, theme: 'system', pin: null, bioEnabled: false, autoLock: true, locked: false, pinAttempt: '',
     replyTo: null, searchQuery: '', partnerAlias: null, myAvatarDataUrl: null, myDisplayName: null, hiddenMsgIds: new Set(), editingMsgId: null,
-    booted: false, route: 'boot' };
+    booted: false, route: 'boot', authResolved: false };
 
   /* ---------- ROUTING (no splash) ---------- */
   function setRoute(name) { S.route = name; }
@@ -374,13 +387,20 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
       if (el) el.classList.toggle('hidden', !ids.includes(i));
     });
   }
+  
+  // FIXED: Only go to auth if user is truly null. Do not wipe session.
   function fallbackToAuth(reason) {
     console.warn('[fallback]', reason);
+    if (S.user) {
+      console.log('[fallback] user exists, keeping session alive, routing to app');
+      safeShow('appScreen');
+      return;
+    }
     try { stopChat(); } catch(e){}
     try { if (S.unsubProfile) S.unsubProfile(); } catch(e){}
     try { if (S.unsubPeer) S.unsubPeer(); } catch(e){}
     try { stopRequests(); } catch(e){}
-    S.user = null; S.profile = null; S.partner = null; S.lastPartnerId = undefined;
+    S.profile = null; S.partner = null; S.lastPartnerId = undefined;
     setRoute('auth');
     safeShow('authScreen');
     setAuthMode('login');
@@ -389,49 +409,42 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
     if (err) { err.textContent = 'Session could not be restored. Please sign in again.'; err.classList.add('show'); }
   }
 
+  /* ---------- MOBILE RELOAD BUTTON ---------- */
+  function setupMobileRefresh() {
+    const btn = $('mobileRefreshBtn');
+    if (btn) {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Add a little spin animation
+        const icon = btn.querySelector('[data-lucide]');
+        if (icon) icon.style.animation = 'spin 0.5s linear infinite';
+        setTimeout(() => { window.location.reload(); }, 100);
+      });
+      ri();
+    }
+  }
+
   /* ---------- KEYBOARD HANDLING (Visual Viewport API) ---------- */
   function setupKeyboardHandling() {
-    if (!window.visualViewport) {
-      // Fallback: viewport resize event
-      let lastHeight = window.innerHeight;
-      window.addEventListener('resize', () => {
-        const keyboardHeight = lastHeight - window.innerHeight;
-        if (keyboardHeight > 100) {
-          document.body.classList.add('keyboard-open');
-          document.body.style.setProperty('--keyboard-height', keyboardHeight + 'px');
-        } else {
-          document.body.classList.remove('keyboard-open');
-          document.body.style.removeProperty('--keyboard-height');
-        }
-        lastHeight = window.innerHeight;
-      });
-      return;
-    }
-
+    if (!window.visualViewport) return;
     const vv = window.visualViewport;
     let rafId = null;
-
     function updateKeyboardState() {
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         const keyboardHeight = window.innerHeight - vv.height;
         const isKeyboardOpen = keyboardHeight > 100;
-
         if (isKeyboardOpen) {
           document.body.classList.add('keyboard-open');
           document.body.style.setProperty('--keyboard-height', keyboardHeight + 'px');
-          // Scroll to bottom of messages so the latest message is visible
           const msgs = document.getElementById('msgs');
-          if (msgs && S.profile?.partnerId) {
-            msgs.scrollTop = msgs.scrollHeight;
-          }
+          if (msgs && S.profile?.partnerId) msgs.scrollTop = msgs.scrollHeight;
         } else {
           document.body.classList.remove('keyboard-open');
           document.body.style.removeProperty('--keyboard-height');
         }
       });
     }
-
     vv.addEventListener('resize', updateKeyboardState);
     vv.addEventListener('scroll', updateKeyboardState);
     updateKeyboardState();
@@ -467,19 +480,7 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
   function doRefresh() {
     ptrEl.classList.add('refreshing');
     ptrText.textContent = 'Refreshing…';
-    try {
-      closePops(); closeCtx();
-      if (S.profile && S.profile.partnerId) {
-        renderChat(); renderList(); renderHead(); renderSide();
-      } else {
-        renderPair(); renderSide();
-      }
-    } catch (e) { console.warn('refresh render', e); }
-    setTimeout(() => {
-      resetPtr();
-      banner('Refreshed', 'Content updated.');
-      if (!S.user && S.route !== 'auth') fallbackToAuth('refresh');
-    }, 700);
+    setTimeout(() => { window.location.reload(); }, 300);
   }
   function bindPullToRefresh() {
     if (!ptrEl) return;
@@ -1120,7 +1121,7 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
     $('qpAdd').onclick = addQ; $('qpInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addQ(); } });
   }
 
-  /* ---------- BOOT: NO SPLASH, DIRECT ROUTING WITH TIMEOUT ---------- */
+  /* ---------- BOOT: PERSISTENT SESSION & TIMEOUT ---------- */
   function boot() {
     if (S.booted) return;
     S.booted = true;
@@ -1130,38 +1131,42 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
     bind();
     bindPullToRefresh();
     setupKeyboardHandling();
+    setupMobileRefresh();
     setAuthMode('login');
     ri();
 
-    // Safety net: if nothing happens in 2.5s, go to login
-    setTimeout(() => {
-      if (!S.user) {
-        console.warn('[boot] auth timeout, showing auth screen');
+    // Boot timeout: If Firebase takes more than 3s, fallback gracefully
+    const bootTimer = setTimeout(() => {
+      if (!S.authResolved) {
+        console.warn('[boot] auth timeout');
+        S.authResolved = true;
         fallbackToAuth('boot-timeout');
       }
     }, BOOT_TIMEOUT_MS);
 
     const { auth, onAuthStateChanged } = window.__fb;
-    let first = true;
+    
+    // FIXED: Proper session handling on refresh
     onAuthStateChanged(auth, async (user) => {
       if (S.registering) return;
-      if (first) {
-        first = false;
-        try {
-          if (user) await enter(user);
-          else leave();
-        } catch (e) {
-          console.error('[boot] enter failed', e);
-          fallbackToAuth('enter-failed');
+      
+      // Mark auth as resolved to cancel boot timeout
+      S.authResolved = true;
+      clearTimeout(bootTimer);
+
+      try {
+        if (user) {
+          // User is signed in (or session was restored from localStorage)
+          console.log('[auth] User session restored:', user.uid);
+          await enter(user);
+        } else {
+          // User is truly signed out
+          console.log('[auth] No active session');
+          leave();
         }
-      } else {
-        try {
-          if (user) await enter(user);
-          else leave();
-        } catch (e) {
-          console.error('[auth-change]', e);
-          fallbackToAuth('auth-change-failed');
-        }
+      } catch (e) {
+        console.error('[auth] Error entering app:', e);
+        fallbackToAuth('enter-failed');
       }
     });
   }
@@ -1172,7 +1177,7 @@ body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)
     if (window.__fb) boot();
     else {
       window.addEventListener('fb-ready', boot, { once: true });
-      setTimeout(() => { if (!S.booted) fallbackToAuth('fb-timeout'); }, BOOT_TIMEOUT_MS + 4000);
+      setTimeout(() => { if (!S.booted) { S.authResolved = true; fallbackToAuth('fb-timeout'); } }, BOOT_TIMEOUT_MS + 2000);
     }
   };
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', start) : start();
