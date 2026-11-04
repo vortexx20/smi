@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#0D0F12">
-<title>INSHA · Private chat</title>
+<title>INSHA</title>
 <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23FFFFFF'/><text x='50%' y='56%' font-family='Helvetica,Arial' font-size='14' font-weight='700' fill='%230D0F12' text-anchor='middle' dominant-baseline='middle'>IN</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1291,7 +1291,7 @@ button {
 }
 .sk.r { align-self: flex-end; width: 40%; }
 
-/* ============ COMPOSER ============ */
+/* ============ COMPOSER (compact) ============ */
 .cw {
   flex-shrink: 0;
   background: rgba(13, 15, 18, 0.85);
@@ -1305,8 +1305,8 @@ button {
 .rbar {
   display: none;
   align-items: center;
-  gap: 10px;
-  padding: 8px clamp(12px, 4vw, 24px);
+  gap: 8px;
+  padding: 6px clamp(10px, 3vw, 18px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.04);
 }
@@ -1314,12 +1314,12 @@ button {
 .rbar .tx { flex: 1; min-width: 0; }
 .rbar b {
   display: block;
-  font-size: 12px;
+  font-size: 11.5px;
   color: #fff;
 }
 .rbar span {
   display: block;
-  font-size: 13px;
+  font-size: 12px;
   color: #9CA3AF;
   white-space: nowrap;
   overflow: hidden;
@@ -1329,13 +1329,14 @@ button {
 .comp {
   display: flex;
   align-items: flex-end;
-  gap: 8px;
-  padding: 10px clamp(12px, 4vw, 24px) 12px;
+  gap: 6px;
+  padding: 6px clamp(8px, 2.5vw, 14px) calc(6px + env(safe-area-inset-bottom, 0px));
 }
+body.keyboard-open .comp { padding-bottom: 6px; }
 
 .circ {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.06);
   color: #fff;
@@ -1350,36 +1351,52 @@ button {
 .circ:hover { background: rgba(255, 255, 255, 0.12); }
 .circ:active { transform: scale(0.9); }
 .circ.rot [data-lucide] { transform: rotate(45deg); }
-.circ [data-lucide] { transition: transform 0.25s var(--spring); }
+.circ [data-lucide] { width: 16px; height: 16px; transition: transform 0.25s var(--spring); }
 
-.comp textarea {
+.input-wrapper {
   flex: 1;
-  resize: none;
-  max-height: 140px;
-  min-height: 40px;
-  padding: 10px 16px;
-  border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
   background: rgba(22, 24, 29, 0.65);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  color: #fff;
-  font-size: 16px;
-  line-height: 1.35;
-  outline: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 3px 3px 3px 12px;
+  min-width: 0;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-.comp textarea:focus {
+.input-wrapper:focus-within {
   border-color: rgba(255, 255, 255, 0.3);
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
 }
-.comp textarea:disabled { opacity: 0.5; }
-.comp textarea::placeholder { color: #6B7280; }
-.comp textarea { scrollbar-width: none; -ms-overflow-style: none; }
-.comp textarea::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+.input-wrapper textarea {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 7px 0;
+  margin: 0;
+  min-height: 30px;
+  max-height: 100px;
+  border-radius: 0;
+  font-size: 15px;
+  line-height: 1.3;
+  outline: none;
+  resize: none;
+  color: #fff;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.input-wrapper textarea::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.input-wrapper textarea::placeholder { color: #6B7280; }
+.input-wrapper textarea:focus { box-shadow: none; border: none; }
 
 .send {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
   border-radius: 50%;
   background: #fff;
   color: #0D0F12;
@@ -1387,9 +1404,11 @@ button {
   place-items: center;
   flex-shrink: 0;
   transition: transform 0.15s, opacity 0.15s;
+  margin-bottom: 1px;
 }
+.send [data-lucide] { width: 16px; height: 16px; }
 .send:active { transform: scale(0.9); }
-.send:disabled { opacity: 0.35; }
+.send:disabled { opacity: 0.4; }
 
 .pop {
   position: absolute;
@@ -1788,38 +1807,6 @@ button {
 .tg input:checked + span { background: #34D399; }
 .tg input:checked + span::before { transform: translateX(20px); }
 
-.pe {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 18px;
-}
-.au { position: relative; cursor: pointer; }
-.au input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-  z-index: 3;
-}
-.ap { width: 96px; height: 96px; font-size: 32px; }
-.cam {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: #fff;
-  color: #0D0F12;
-  display: grid;
-  place-items: center;
-  border: 3px solid #191816;
-  z-index: 2;
-}
-.cam [data-lucide] { width: 14px; height: 14px; }
-
 .fl {
   display: flex;
   flex-direction: column;
@@ -1842,6 +1829,198 @@ button {
 }
 
 .scrim { display: none; }
+
+/* ============ PROFILE SPECIFIC ============ */
+.profile-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.profile-hero .avatar {
+  width: 112px;
+  height: 112px;
+  font-size: 40px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+}
+.profile-hero .au { position: relative; cursor: pointer; }
+.profile-hero .au input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 3;
+}
+.profile-hero .cam {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #fff;
+  color: #0D0F12;
+  display: grid;
+  place-items: center;
+  border: 3px solid #191816;
+  z-index: 2;
+}
+.profile-hero .cam [data-lucide] { width: 16px; height: 16px; }
+.profile-name {
+  font: 800 22px var(--disp);
+  letter-spacing: -0.03em;
+  color: #fff;
+  text-align: center;
+}
+.profile-email {
+  font-size: 13px;
+  color: #9CA3AF;
+  text-align: center;
+  margin-top: -6px;
+}
+.profile-bio {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #cfc8bd;
+  text-align: center;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-top: 4px;
+}
+.profile-bio.empty { color: #6B7280; font-style: italic; }
+
+.crop-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 320px;
+  margin: 0 auto 16px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.crop-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+.crop-wrap canvas:active { cursor: grabbing; }
+.crop-hint {
+  font-size: 12px;
+  color: #9CA3AF;
+  text-align: center;
+  margin-bottom: 12px;
+}
+.zoom-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 0 6px;
+}
+.zoom-row input[type=range] {
+  flex: 1;
+  accent-color: #fff;
+  height: 4px;
+}
+.zoom-row span {
+  font-size: 12px;
+  color: #9CA3AF;
+  min-width: 34px;
+  text-align: right;
+}
+
+.partner-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 0 8px;
+}
+.partner-hero .avatar {
+  width: 140px;
+  height: 140px;
+  font-size: 48px;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0,0,0,0.5);
+  cursor: zoom-in;
+  transition: transform 0.2s var(--spring);
+}
+.partner-hero .avatar:hover { transform: scale(1.03); }
+.partner-hero .avatar:active { transform: scale(0.98); }
+.partner-hero h2 {
+  font: 800 24px var(--disp);
+  letter-spacing: -0.03em;
+  color: #fff;
+  text-align: center;
+  margin-top: 4px;
+}
+.partner-hero .orig-name {
+  font-size: 12px;
+  color: #6B7280;
+  margin-top: -4px;
+}
+.partner-hero .p-bio {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #cfc8bd;
+  text-align: center;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-top: 4px;
+  width: 100%;
+}
+.partner-hero .p-bio.empty { color: #6B7280; font-style: italic; }
+
+/* Full-screen photo viewer */
+.photo-view {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  cursor: zoom-out;
+}
+.photo-view.show { display: flex; }
+.photo-view img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(0,0,0,0.8);
+  object-fit: contain;
+}
+.photo-view .close {
+  position: absolute;
+  top: calc(16px + env(safe-area-inset-top, 0px));
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(22, 24, 29, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
 
 /* ============ RESPONSIVE NAV ============ */
 @media (min-width: 900px) {
@@ -1890,72 +2069,6 @@ button {
   }
 }
 
-/* ============ COMPOSER OVERRIDES ============ */
-.cw .comp {
-  gap: 6px;
-  padding: 8px clamp(10px, 3vw, 18px) calc(10px + env(safe-area-inset-bottom, 0px));
-}
-body.keyboard-open .cw .comp { padding-bottom: 10px; }
-.cw .comp .input-wrapper {
-  flex: 1;
-  display: flex;
-  align-items: flex-end;
-  gap: 6px;
-  background: rgba(22, 24, 29, 0.65);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 24px;
-  padding: 4px 4px 4px 14px;
-  min-width: 0;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.cw .comp .input-wrapper:focus-within {
-  border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
-}
-.cw .comp .input-wrapper textarea {
-  flex: 1;
-  border: none;
-  background: transparent;
-  padding: 9px 0;
-  margin: 0;
-  min-height: 38px;
-  max-height: 120px;
-  border-radius: 0;
-  font-size: 16px;
-  line-height: 1.35;
-  outline: none;
-  resize: none;
-  color: #fff;
-}
-.cw .comp .input-wrapper textarea:focus {
-  box-shadow: none;
-  border: none;
-}
-.cw .comp .input-wrapper .send {
-  width: 38px;
-  height: 38px;
-  min-width: 38px;
-  border-radius: 50%;
-  background: #fff;
-  color: #0D0F12;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  transition: transform 0.15s, opacity 0.15s;
-  margin-bottom: 2px;
-}
-.cw .comp .input-wrapper .send:active { transform: scale(0.9); }
-.cw .comp .input-wrapper .send:disabled { opacity: 0.4; }
-.cw .comp .circ {
-  width: 38px;
-  height: 38px;
-  min-width: 38px;
-  margin-bottom: 2px;
-}
-#quickPop { bottom: calc(100% + 8px); }
-
 /* ============ KEYFRAMES ============ */
 @keyframes fade {
   from { opacity: 0; }
@@ -1965,17 +2078,9 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: none; }
 }
-@keyframes pop {
-  from { opacity: 0; transform: scale(0.7) rotate(-8deg); }
-  to { opacity: 1; transform: none; }
-}
 @keyframes pop2 {
   from { opacity: 0; transform: translateY(8px) scale(0.97); }
   to { opacity: 1; transform: none; }
-}
-@keyframes sweep {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(280%); }
 }
 @keyframes spin {
   to { transform: rotate(360deg); }
@@ -2144,7 +2249,7 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
   <main class="chat">
     <header class="head">
       <button class="ib menu" id="menuBtn" aria-label="Toggle sidebar" title="Toggle sidebar"><i data-lucide="panel-left"></i></button>
-      <div class="avatar av-s" id="peerAv">?</div>
+      <div class="avatar av-s" id="peerAv" style="cursor:pointer">?</div>
       <div class="who" id="peerWho"><h3 id="peerName">No partner yet</h3><div class="sub" id="peerSub"><i class="dt"></i><span>Pair to start chatting</span></div></div>
       <button class="ib" id="searchBtn" aria-label="Search" title="Search"><i data-lucide="search"></i></button>
       <button class="ib" id="lockNow" aria-label="Lock" title="Lock now"><i data-lucide="lock"></i></button>
@@ -2195,7 +2300,7 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
   <div class="pad" id="pinPad"></div>
 </div>
 
-<!-- SHEETS -->
+<!-- SETTINGS MODAL -->
 <div class="modal" id="settingsModal">
   <div class="sheet">
     <h3>Settings</h3>
@@ -2230,41 +2335,89 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
   </div>
 </div>
 
-<div class="modal" id="passModal">
+<!-- MY PROFILE MODAL -->
+<div class="modal" id="myProfileModal">
   <div class="sheet">
-    <h3>Set passcode</h3>
-    <p>Choose a 4-digit passcode to protect INSHA on this device.</p>
-    <div class="dots" id="setPinDots" style="justify-content:center;margin-bottom:18px"><span class="d"></span><span class="d"></span><span class="d"></span><span class="d"></span></div>
-    <div class="pad" id="setPinPad" style="margin:0 auto"></div>
-    <div class="acts" style="margin-top:14px"><button id="cancelSetPin">Cancel</button></div>
-  </div>
-</div>
+    <h3>My profile</h3>
+    <p>Your photo, name and bio are visible to your paired partner only.</p>
 
-<div class="modal" id="profileModal">
-  <div class="sheet">
-    <h3>Edit profile</h3>
-    <p>Your name and photo are stored with your account preferences.</p>
-    <div class="pe">
+    <div class="profile-hero">
       <label class="au">
-        <input type="file" accept="image/*" id="avatarFile">
-        <div class="avatar ap" id="avatarPreview">?</div>
+        <input type="file" accept="image/*" id="myAvatarFile">
+        <div class="avatar ap" id="myAvatarPreview">?</div>
         <div class="cam"><i data-lucide="camera"></i></div>
       </label>
-      <div class="field" style="width:100%;margin:0"><label>Display name</label><input class="input" id="profileName" placeholder="Your name"></div>
     </div>
-    <div class="acts"><button id="cancelProfile">Cancel</button><button class="p" id="saveProfile">Save</button></div>
+
+    <div class="field">
+      <label for="myDisplayName">Display name</label>
+      <input class="input" id="myDisplayName" placeholder="Your name">
+    </div>
+
+    <div class="field">
+      <label for="myBio">Bio</label>
+      <textarea class="input" id="myBio" rows="3" maxlength="240" placeholder="A short line about you…" style="resize:none;line-height:1.5;font-family:var(--font)"></textarea>
+    </div>
+
+    <div class="acts">
+      <button id="cancelMyProfile">Cancel</button>
+      <button class="p" id="saveMyProfile">Save</button>
+    </div>
   </div>
 </div>
 
+<!-- PHOTO CROP MODAL -->
+<div class="modal" id="cropModal">
+  <div class="sheet">
+    <h3>Crop photo</h3>
+    <p>Drag to reposition, pinch or slider to zoom.</p>
+    <div class="crop-wrap"><canvas id="cropCanvas"></canvas></div>
+    <div class="crop-hint">Square avatar · 512 × 512</div>
+    <div class="zoom-row">
+      <i data-lucide="zoom-out" class="s" style="color:#9CA3AF"></i>
+      <input type="range" id="cropZoom" min="1" max="3" step="0.01" value="1">
+      <i data-lucide="zoom-in" class="s" style="color:#9CA3AF"></i>
+    </div>
+    <div class="acts">
+      <button id="cancelCrop">Cancel</button>
+      <button class="p" id="applyCrop">Use photo</button>
+    </div>
+  </div>
+</div>
+
+<!-- PARTNER PROFILE MODAL -->
+<div class="modal" id="partnerProfileModal">
+  <div class="sheet">
+    <div class="partner-hero">
+      <div class="avatar" id="partnerProfileAv">?</div>
+      <h2 id="partnerProfileName">Partner</h2>
+      <div class="orig-name hidden" id="partnerOrigName"></div>
+      <div class="p-bio" id="partnerProfileBio">No bio yet.</div>
+    </div>
+    <div class="acts">
+      <button id="closePartnerProfile">Close</button>
+      <button class="p" id="renamePartnerBtn"><i data-lucide="pencil" class="s" style="margin-right:4px"></i>Rename</button>
+    </div>
+  </div>
+</div>
+
+<!-- PHOTO FULL-VIEW -->
+<div class="photo-view" id="photoView">
+  <button class="close" id="closePhotoView" aria-label="Close"><i data-lucide="x"></i></button>
+  <img id="photoViewImg" alt="">
+</div>
+
+<!-- RENAME MODAL -->
 <div class="modal" id="renameModal">
   <div class="sheet">
     <h3>Rename partner</h3>
-    <p>Only you will see this custom name.</p>
-    <div class="field"><label>Partner display name</label><input class="input" id="renameInput" placeholder="e.g., Alex"></div>
+    <p>Only you will see this nickname. Their real name stays unchanged for everyone else.</p>
+    <div class="field"><label>Nickname</label><input class="input" id="renameInput" placeholder="e.g., Alex"></div>
     <div class="acts"><button id="cancelRename">Cancel</button><button class="p" id="saveRename">Save</button></div>
   </div>
 </div>
 
+<!-- FORWARD MODAL -->
 <div class="modal" id="forwardModal">
   <div class="sheet">
     <h3>Forward message</h3>
@@ -2274,6 +2427,7 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
   </div>
 </div>
 
+<!-- REQUEST MODAL -->
 <div class="modal" id="reqModal">
   <div class="sheet">
     <h3>Connection request</h3>
@@ -2282,6 +2436,7 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
   </div>
 </div>
 
+<!-- RECONNECT MODAL -->
 <div class="modal" id="reconModal">
   <div class="sheet">
     <h3>Partner disconnected</h3>
@@ -2296,13 +2451,15 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
   </div>
 </div>
 
+<!-- CHAT MENU MODAL -->
 <div class="modal" id="chatMenuModal">
   <div class="sheet">
     <h3>Chat options</h3>
     <p>Tools for this conversation.</p>
     <div class="grp">
+      <button class="set" id="menuPartner"><div class="l"><div class="ico"><i data-lucide="user" class="s"></i></div><div><b>View partner profile</b><small>See photo, name and bio</small></div></div></button>
       <button class="set" id="menuSearch"><div class="l"><div class="ico"><i data-lucide="search" class="s"></i></div><div><b>Search in chat</b><small>Find and highlight words</small></div></div></button>
-      <button class="set" id="menuRename"><div class="l"><div class="ico"><i data-lucide="pencil" class="s"></i></div><div><b>Rename partner</b><small>Local display name</small></div></div></button>
+      <button class="set" id="menuRename"><div class="l"><div class="ico"><i data-lucide="pencil" class="s"></i></div><div><b>Rename partner</b><small>Local nickname only</small></div></div></button>
       <button class="set" id="menuTxt"><div class="l"><div class="ico"><i data-lucide="file-text" class="s"></i></div><div><b>Export as TXT</b><small>Readable transcript</small></div></div></button>
       <button class="set" id="menuJson"><div class="l"><div class="ico"><i data-lucide="file-json" class="s"></i></div><div><b>Export as JSON</b><small>Structured backup</small></div></div></button>
       <button class="set" id="menuClear"><div class="l"><div class="ico" style="color:#F87171"><i data-lucide="trash-2" class="s"></i></div><div><b>Clear chat view</b><small>Hide messages on this device</small></div></div></button>
@@ -2311,6 +2468,7 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
   </div>
 </div>
 
+<!-- GENERIC CONFIRM -->
 <div class="modal" id="modal">
   <div class="sheet">
     <h3 id="mTitle">Confirm</h3>
@@ -2359,28 +2517,21 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
     unsubIn: null, unsubOut: null, unsubProfile: null, unsubPeer: null,
     lastPartnerId: undefined, unread: 0, pin: null, bioEnabled: false, autoLock: true, locked: false, pinAttempt: '',
     replyTo: null, searchQuery: '', partnerAlias: null, hiddenMsgIds: new Set(), editingMsgId: null,
-    booted: false, route: 'boot', authResolved: false, notifyAsked: false
+    booted: false, route: 'boot', authResolved: false, notifyAsked: false,
+    tmpAvatar: null, pendingAvatar: null, cropState: null, cropImg: null
   };
 
   /* ---------- AUTO-SCROLL ---------- */
-  // Force scroll to bottom. Used everywhere a new message lands.
   let scrollRaf = null;
   function scrollToBottom(force) {
     const box = $('msgs');
     if (!box) return;
     const near = box.scrollHeight - box.scrollTop - box.clientHeight < 160;
     if (!force && !near) return;
-    // Two-frame defer so layout settles (bubbles grow after images/icons render).
     cancelAnimationFrame(scrollRaf);
     scrollRaf = requestAnimationFrame(() => {
       requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; });
     });
-  }
-  // Some browsers need a second nudge after smooth scrolling settles.
-  function hardScrollToBottom() {
-    const box = $('msgs');
-    if (!box) return;
-    box.scrollTop = box.scrollHeight;
   }
 
   /* ---------- NOTIFICATION PERMISSION ---------- */
@@ -2390,9 +2541,7 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
       return false;
     }
     let permission = Notification.permission;
-    if (permission === "default") {
-      permission = await Notification.requestPermission();
-    }
+    if (permission === "default") permission = await Notification.requestPermission();
     if (permission === "granted") {
       try {
         new Notification("INSHA Chat", { body: "You will now receive notifications when Chrome is closed or in background!", icon: "favicon.ico" });
@@ -2683,20 +2832,32 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
     }, () => { cur = cur.slice(0, -1); dots($('setPinDots'), cur.length); });
     openM('passModal');
   }
-  $('cancelSetPin').onclick = () => closeM('passModal');
-  $('setPassBtn').onclick = openSetPass;
-  $('bioToggle').addEventListener('change', async (e) => {
-    if (e.target.checked) {
-      if (!bioOK()) { e.target.checked = false; return banner('Not available', 'This browser does not support biometrics.'); }
-      if (!S.pin) { e.target.checked = false; return banner('Set passcode first', 'A passcode is required.'); }
-      if (!(S.bioEnabled = true, await tryBio())) { S.bioEnabled = false; e.target.checked = false; return banner('Setup failed', 'Could not enroll biometrics.'); }
-      localStorage.setItem(BIO_KEY, '1');
-    } else { S.bioEnabled = false; localStorage.setItem(BIO_KEY, '0'); }
-    loadLockPrefs();
+  // pass modal only exists if we add it; guarded
+  document.addEventListener('DOMContentLoaded', () => {
+    if ($('passModal')) {
+      const btn = $('cancelSetPin');
+      if (btn) btn.onclick = () => closeM('passModal');
+    }
   });
-  $('autoLockToggle').addEventListener('change', (e) => { S.autoLock = e.target.checked; localStorage.setItem(AL_KEY, S.autoLock ? '1' : '0'); });
-  $('lockNow').onclick = () => S.pin ? openLock() : banner('No passcode', 'Set a passcode first.');
-  $('rLock').onclick = () => { S.pin ? openLock() : openSetPass(); };
+
+  /* attach once elements exist */
+  window.addEventListener('load', () => {
+    if ($('setPassBtn')) $('setPassBtn').onclick = openSetPass;
+    if ($('cancelSetPin')) $('cancelSetPin').onclick = () => closeM('passModal');
+    if ($('bioToggle')) $('bioToggle').addEventListener('change', async (e) => {
+      if (e.target.checked) {
+        if (!bioOK()) { e.target.checked = false; return banner('Not available', 'This browser does not support biometrics.'); }
+        if (!S.pin) { e.target.checked = false; return banner('Set passcode first', 'A passcode is required.'); }
+        if (!(S.bioEnabled = true, await tryBio())) { S.bioEnabled = false; e.target.checked = false; return banner('Setup failed', 'Could not enroll biometrics.'); }
+        localStorage.setItem(BIO_KEY, '1');
+      } else { S.bioEnabled = false; localStorage.setItem(BIO_KEY, '0'); }
+      loadLockPrefs();
+    });
+    if ($('autoLockToggle')) $('autoLockToggle').addEventListener('change', (e) => { S.autoLock = e.target.checked; localStorage.setItem(AL_KEY, S.autoLock ? '1' : '0'); });
+    if ($('lockNow')) $('lockNow').onclick = () => S.pin ? openLock() : banner('No passcode', 'Set a passcode first.');
+    if ($('rLock')) $('rLock').onclick = () => { S.pin ? openLock() : openSetPass(); };
+  });
+
   let bgT = null;
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
@@ -2720,7 +2881,7 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
   async function ensureProfile(user, name) {
     let p = await getProfile(user.uid); if (p) return p;
     const { doc, setDoc, serverTimestamp, db } = window.__fb;
-    p = { displayName: name || (user.email || 'user').split('@')[0], email: user.email, partnerCode: makeCode(), partnerId: null };
+    p = { displayName: name || (user.email || 'user').split('@')[0], email: user.email, partnerCode: makeCode(), partnerId: null, bio: '' };
     await setDoc(doc(db, 'users', user.uid), { ...p, createdAt: serverTimestamp() });
     return p;
   }
@@ -2805,6 +2966,10 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
   const beat = () => { if (!document.hidden) return setPresence(true); };
   window.addEventListener('pagehide', () => setPresence(false));
   window.addEventListener('beforeunload', () => setPresence(false));
+  document.addEventListener('visibilitychange', () => { if (document.hidden) setPresence(false); });
+  window.addEventListener('blur', () => setPresence(false));
+  window.addEventListener('focus', () => beat());
+
   setInterval(beat, 15000);
   setInterval(async () => {
     if (!S.partner) return;
@@ -2895,7 +3060,6 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
         if (!silent) alertIncoming(m);
       });
       saveSeen(me, seen); S.loadedIn = true; settle();
-      // Always scroll to bottom when a new incoming message lands.
       if (anyNew) scrollToBottom(true);
     }, (e) => { console.error(e); fbFail(e, 'Sync error'); });
     S.unsubOut = onSnapshot(query(collection(db, 'messages'), where('senderId', '==', me), where('receiverId', '==', pid)), (snap) => {
@@ -2983,7 +3147,6 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
       S.drawn.add(m.id); prev = m;
     });
     box.innerHTML = html; ri();
-    // Auto-scroll: always bottom when we first render or user was already at bottom.
     if (near || !S.ready) scrollToBottom(true);
   }
   function renderComposer() {
@@ -3039,6 +3202,227 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
       ? `Connected to ${p.displayName || 'partner'}`
       : (S.sentName ? `Request sent. Waiting for ${S.sentName} to accept...` : 'Waiting for partner...');
   }
+
+  /* ========== MY PROFILE ========== */
+  const MY_PROFILE_BTN = $('rProfile');
+  function openMyProfile() {
+    if (!S.profile) return;
+    $('myDisplayName').value = S.profile.displayName || '';
+    $('myBio').value = S.profile.bio || '';
+    S.tmpAvatar = safeImg(S.profile.avatarUrl);
+    setAvatar($('myAvatarPreview'), S.profile.displayName || '?', S.tmpAvatar);
+    openM('myProfileModal');
+    openSide(false);
+  }
+  if (MY_PROFILE_BTN) MY_PROFILE_BTN.onclick = openMyProfile;
+
+  /* my avatar file -> crop flow */
+  $('myAvatarFile').addEventListener('change', async (e) => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    if (!f.type.startsWith('image/')) return banner('Not an image', 'Pick a photo.');
+    try { await startCrop(f); }
+    catch (err) { banner('Photo failed', 'Could not read that image.'); }
+  });
+
+  function startCrop(file) {
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onerror = rej;
+      r.onload = () => {
+        const im = new Image();
+        im.onerror = rej;
+        im.onload = () => {
+          S.cropImg = im;
+          S.cropState = { scale: 1, baseScale: 1, offsetX: 0, offsetY: 0, minScale: 1 };
+          resizeCropCanvas();
+          drawCrop();
+          $('cropZoom').value = 1;
+          openM('cropModal');
+          res();
+        };
+        im.src = r.result;
+      };
+      r.readAsDataURL(file);
+    });
+  }
+
+  function resizeCropCanvas() {
+    const cv = $('cropCanvas');
+    const wrap = cv.parentElement;
+    const size = Math.min(wrap.clientWidth, wrap.clientHeight, 360);
+    cv.width = size; cv.height = size;
+    cv.style.width = size + 'px';
+    cv.style.height = size + 'px';
+    if (S.cropImg) {
+      const minScale = Math.max(size / S.cropImg.width, size / S.cropImg.height);
+      S.cropState.minScale = minScale;
+      S.cropState.baseScale = minScale;
+      S.cropState.scale = Math.max(S.cropState.scale, minScale);
+      clampCropOffsets();
+    }
+    drawCrop();
+  }
+
+  function clampCropOffsets() {
+    if (!S.cropImg) return;
+    const cv = $('cropCanvas'), sz = cv.width;
+    const sc = S.cropState.scale;
+    const w = S.cropImg.width * sc, h = S.cropImg.height * sc;
+    const maxX = Math.max(0, (w - sz) / 2);
+    const maxY = Math.max(0, (h - sz) / 2);
+    S.cropState.offsetX = Math.max(-maxX, Math.min(maxX, S.cropState.offsetX));
+    S.cropState.offsetY = Math.max(-maxY, Math.min(maxY, S.cropState.offsetY));
+  }
+
+  function drawCrop() {
+    const cv = $('cropCanvas'), ctx = cv.getContext('2d');
+    const sz = cv.width;
+    ctx.clearRect(0, 0, sz, sz);
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, sz, sz);
+    if (!S.cropImg) return;
+    const sc = S.cropState.scale;
+    const w = S.cropImg.width * sc, h = S.cropImg.height * sc;
+    const x = (sz - w) / 2 + S.cropState.offsetX;
+    const y = (sz - h) / 2 + S.cropState.offsetY;
+    ctx.drawImage(S.cropImg, x, y, w, h);
+    // Circle mask overlay
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.beginPath();
+    ctx.arc(sz / 2, sz / 2, sz / 2 - 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /* Drag on canvas */
+  (function () {
+    const cv = $('cropCanvas');
+    let drag = null;
+    cv.addEventListener('pointerdown', (e) => {
+      if (!S.cropImg) return;
+      drag = { x: e.clientX, y: e.clientY, ox: S.cropState.offsetX, oy: S.cropState.offsetY };
+      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    cv.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      S.cropState.offsetX = drag.ox + dx;
+      S.cropState.offsetY = drag.oy + dy;
+      clampCropOffsets();
+      drawCrop();
+    });
+    const end = () => { drag = null; };
+    cv.addEventListener('pointerup', end);
+    cv.addEventListener('pointercancel', end);
+    /* pinch zoom */
+    let pinch = null;
+    cv.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        const t1 = e.touches[0], t2 = e.touches[1];
+        pinch = { d0: Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY), s0: S.cropState.scale };
+      }
+    }, { passive: true });
+    cv.addEventListener('touchmove', (e) => {
+      if (!pinch || e.touches.length !== 2) return;
+      const t1 = e.touches[0], t2 = e.touches[1];
+      const d = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const ratio = d / pinch.d0;
+      S.cropState.scale = Math.max(S.cropState.minScale, Math.min(S.cropState.minScale * 3, pinch.s0 * ratio));
+      $('cropZoom').value = S.cropState.scale / S.cropState.minScale;
+      clampCropOffsets();
+      drawCrop();
+      e.preventDefault();
+    }, { passive: false });
+    cv.addEventListener('touchend', () => { pinch = null; }, { passive: true });
+  })();
+
+  $('cropZoom').addEventListener('input', (e) => {
+    if (!S.cropState) return;
+    const z = parseFloat(e.target.value) || 1;
+    S.cropState.scale = S.cropState.minScale * z;
+    clampCropOffsets();
+    drawCrop();
+  });
+
+  $('cancelCrop').onclick = () => { S.cropImg = null; S.cropState = null; closeM('cropModal'); };
+  $('applyCrop').onclick = () => {
+    if (!S.cropImg) return;
+    const cv = $('cropCanvas'), sz = cv.width;
+    const out = document.createElement('canvas');
+    out.width = out.height = 512;
+    const octx = out.getContext('2d');
+    const sc = S.cropState.scale * (512 / sz);
+    const w = S.cropImg.width * sc, h = S.cropImg.height * sc;
+    const x = (512 - w) / 2 + S.cropState.offsetX * (512 / sz);
+    const y = (512 - h) / 2 + S.cropState.offsetY * (512 / sz);
+    octx.drawImage(S.cropImg, x, y, w, h);
+    S.tmpAvatar = out.toDataURL('image/jpeg', 0.85);
+    setAvatar($('myAvatarPreview'), '', S.tmpAvatar);
+    S.cropImg = null; S.cropState = null;
+    closeM('cropModal');
+  };
+
+  $('cancelMyProfile').onclick = () => closeM('myProfileModal');
+  $('saveMyProfile').onclick = async () => {
+    const n = $('myDisplayName').value.trim(); if (!n) return banner('Name required', 'Enter a display name.');
+    const bio = $('myBio').value.slice(0, 240);
+    setBusy($('saveMyProfile'), true);
+    try {
+      const { doc, updateDoc, db, auth } = window.__fb;
+      await updateDoc(doc(db, 'users', auth.currentUser.uid), { displayName: n, bio, avatarUrl: S.tmpAvatar || null });
+      S.profile = { ...S.profile, displayName: n, bio, avatarUrl: S.tmpAvatar || null };
+      renderSide();
+      closeM('myProfileModal');
+      banner('Profile saved', 'Your partner sees the update now.');
+    } catch (err) { banner('Save failed', err.message); }
+    finally { setBusy($('saveMyProfile'), false); }
+  };
+
+  /* ========== PARTNER PROFILE ========== */
+  function openPartnerProfile() {
+    if (!S.partner) return banner('No partner', 'Pair first.');
+    const display = pname();
+    const orig = S.partnerAlias ? (S.partner.displayName || 'Partner') : '';
+    $('partnerProfileName').textContent = display;
+    $('partnerOrigName').textContent = orig ? `Real name: ${orig}` : '';
+    $('partnerOrigName').classList.toggle('hidden', !orig);
+    const bio = (S.partner.bio || '').trim();
+    $('partnerProfileBio').textContent = bio || 'No bio yet.';
+    $('partnerProfileBio').classList.toggle('empty', !bio);
+    setAvatar($('partnerProfileAv'), display, S.partner.avatarUrl);
+    openM('partnerProfileModal');
+  }
+  const peerAvEl = $('peerAv');
+  if (peerAvEl) peerAvEl.addEventListener('click', openPartnerProfile);
+  const peerWhoEl = $('peerWho');
+  if (peerWhoEl) peerWhoEl.addEventListener('click', openPartnerProfile);
+  $('closePartnerProfile').onclick = () => closeM('partnerProfileModal');
+  $('renamePartnerBtn').onclick = () => { closeM('partnerProfileModal'); openRename(); };
+
+  /* Partner photo viewer */
+  $('partnerProfileAv').addEventListener('click', (e) => {
+    const img = e.currentTarget.querySelector('img');
+    if (!img || !img.src) return;
+    $('photoViewImg').src = img.src;
+    $('photoView').classList.add('show');
+  });
+  $('closePhotoView').onclick = () => $('photoView').classList.remove('show');
+  $('photoView').addEventListener('click', (e) => {
+    if (e.target === $('photoView')) $('photoView').classList.remove('show');
+  });
+
+  /* ========== RENAME PARTNER ========== */
+  function openRename() {
+    if (!S.partner) return banner('No partner', 'Pair first.');
+    $('renameInput').value = S.partnerAlias || S.partner.displayName || '';
+    openM('renameModal');
+  }
+  $('cancelRename').onclick = () => closeM('renameModal');
+  $('saveRename').onclick = () => {
+    const v = $('renameInput').value.trim(); if (!v) return banner('Name required', 'Enter a name.');
+    S.partnerAlias = v; savePrefs(); renderHead(); renderList(); renderChat();
+    closeM('renameModal'); banner('Renamed', 'Partner nickname updated locally.');
+  };
 
   /* Reply / edit */
   function setReply(m) {
@@ -3178,6 +3562,7 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
   /* Chat menu + export */
   $('chatMenuBtn').onclick = () => openM('chatMenuModal');
   $('cancelChatMenu').onclick = () => closeM('chatMenuModal');
+  $('menuPartner').onclick = () => { closeM('chatMenuModal'); openPartnerProfile(); };
   $('menuSearch').onclick = () => { closeM('chatMenuModal'); openSearch(); };
   $('menuRename').onclick = () => { closeM('chatMenuModal'); openRename(); };
   function download(name, type, content) {
@@ -3209,58 +3594,6 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
     if (!(await confirmBox('Clear chat view', 'Hide all messages on this device? They stay stored in Firestore.', 'Clear'))) return;
     S.msgs.forEach((m) => S.hiddenMsgIds.add(m.id));
     savePrefs(); renderChat(); renderList(); banner('Cleared', 'Messages hidden on this device.');
-  };
-
-  /* Profile + rename */
-  $('rProfile').onclick = () => {
-    const n = S.profile?.displayName || '';
-    $('profileName').value = n;
-    S.tmpAvatar = safeImg(S.profile?.avatarUrl);
-    setAvatar($('avatarPreview'), n, S.tmpAvatar);
-    openM('profileModal'); openSide(false);
-  };
-  $('cancelProfile').onclick = () => closeM('profileModal');
-  function squareJpeg(file, size) {
-    return new Promise((res, rej) => {
-      const r = new FileReader();
-      r.onerror = rej;
-      r.onload = () => {
-        const im = new Image();
-        im.onerror = rej;
-        im.onload = () => {
-          const m = Math.min(im.width, im.height), c = document.createElement('canvas');
-          c.width = c.height = size;
-          c.getContext('2d').drawImage(im, (im.width - m) / 2, (im.height - m) / 2, m, m, 0, 0, size, size);
-          res(c.toDataURL('image/jpeg', 0.82));
-        };
-        im.src = r.result;
-      };
-      r.readAsDataURL(file);
-    });
-  }
-  $('avatarFile').addEventListener('change', async (e) => {
-    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-    if (!f.type.startsWith('image/')) return banner('Not an image', 'Pick a photo.');
-    try { S.tmpAvatar = await squareJpeg(f, 256); setAvatar($('avatarPreview'), '', S.tmpAvatar); }
-    catch (err) { banner('Photo failed', 'Could not read that image.'); }
-  });
-  $('saveProfile').onclick = async () => {
-    const n = $('profileName').value.trim(); if (!n) return banner('Name required', 'Enter a display name.');
-    setBusy($('saveProfile'), true);
-    try {
-      const { doc, updateDoc, db, auth } = window.__fb;
-      await updateDoc(doc(db, 'users', auth.currentUser.uid), { displayName: n, avatarUrl: S.tmpAvatar || null });
-      closeM('profileModal'); banner('Profile saved', 'Your partner sees the update now.');
-    } catch (err) { banner('Save failed', err.message); }
-    finally { setBusy($('saveProfile'), false); }
-  };
-  function openRename() { if (!S.partner) return banner('No partner', 'Pair first.'); $('renameInput').value = S.partnerAlias || S.partner.displayName || ''; openM('renameModal'); }
-  $('peerWho').onclick = openRename;
-  $('cancelRename').onclick = () => closeM('renameModal');
-  $('saveRename').onclick = () => {
-    const v = $('renameInput').value.trim(); if (!v) return banner('Name required', 'Enter a name.');
-    S.partnerAlias = v; savePrefs(); renderHead(); renderList(); renderChat();
-    closeM('renameModal'); banner('Renamed', 'Partner name updated locally.');
   };
 
   /* Auth / pair flows */
@@ -3382,7 +3715,7 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
     $('scrim').onclick = () => openSide(false);
 
     const ta = $('msgInput'), touch = window.matchMedia('(pointer: coarse)');
-    ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 120) + 'px'; });
+    ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 100) + 'px'; });
 
     let shiftHeld = false;
     const submitNow = () => $('composer').requestSubmit();
@@ -3400,7 +3733,6 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
       e.preventDefault();
       const v = ta.value; ta.value = ''; ta.style.height = 'auto';
       send(v); ta.focus(); closePops();
-      // Ensure we jump to the bottom right after the send click.
       requestAnimationFrame(() => scrollToBottom(true));
     });
     const addQr = () => { const v = $('qrInput').value.trim(); if (!v) return; S.quick.push(v.slice(0, 60)); $('qrInput').value = ''; savePrefs(); renderSide(); renderQuickList(); };
@@ -3471,15 +3803,8 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
     });
 
     /* Pairing screen profile / settings */
-    $('pairProfileBtn').onclick = () => {
-      if (!S.profile) return;
-      const n = S.profile.displayName || '';
-      $('profileName').value = n;
-      S.tmpAvatar = safeImg(S.profile.avatarUrl);
-      setAvatar($('avatarPreview'), n, S.tmpAvatar);
-      openM('profileModal');
-    };
-    $('pairSettingsBtn').onclick = () => { openM('settingsModal'); loadLockPrefs(); };
+    if ($('pairProfileBtn')) $('pairProfileBtn').onclick = openMyProfile;
+    if ($('pairSettingsBtn')) $('pairSettingsBtn').onclick = () => { openM('settingsModal'); loadLockPrefs(); };
 
     /* Notification button */
     const nb = $('notifyBtn');
@@ -3540,6 +3865,11 @@ body.keyboard-open .cw .comp { padding-bottom: 10px; }
     }
   };
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', start) : start();
+
+  /* Re-measure crop canvas on window resize if crop modal open */
+  window.addEventListener('resize', () => {
+    if (S.cropImg && $('cropModal').classList.contains('show')) resizeCropCanvas();
+  });
 })();
 </script>
 </body>
