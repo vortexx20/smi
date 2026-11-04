@@ -13,13 +13,13 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--bg:#F4F0EA;--panel:#FBF9F6;--card:#fff;--ink:#1C1A17;--mute:#756F66;--faint:#A8A196;--line:#E6E0D6;--acc:#B5452A;--acc2:#963620;--accsoft:rgba(181,69,42,.1);--in:#EFE9DF;--ok:#2E9A5B;--red:#D23B2E;--rail:#1C1A17;--sh:0 18px 40px -14px rgba(28,26,23,.28),0 0 0 1px rgba(28,26,23,.06);--font:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;--disp:'Bricolage Grotesque','Figtree',system-ui,sans-serif;--mono:ui-monospace,Menlo,Consolas,monospace;--spring:cubic-bezier(.32,.72,0,1);--ease:cubic-bezier(.25,.1,.25,1);color-scheme:light}
 [data-theme=dark]{--bg:#121110;--panel:#191816;--card:#232120;--ink:#F3EFE8;--mute:#A09A90;--faint:#6E695F;--line:#2E2C29;--acc:#D8603F;--acc2:#E87654;--accsoft:rgba(216,96,63,.16);--in:#2A2825;--rail:#0C0B0A;--sh:0 18px 40px -14px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.06);color-scheme:dark}
-html,body{height:100%}
-body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;overflow:hidden;transition:background .3s}
+html,body{height:100%;height:100dvh}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;overflow:hidden;transition:background .3s;position:fixed;width:100%}
 button,input,textarea{font:inherit;color:inherit}button{cursor:pointer;background:none;border:none}
 .hidden{display:none!important}
 [data-lucide]{width:20px;height:20px;stroke-width:1.9;flex-shrink:0;pointer-events:none}
 .sm-i [data-lucide],[data-lucide].s{width:16px;height:16px}
-.frame{position:fixed;inset:0;display:flex;background:var(--bg)}
+.frame{position:fixed;inset:0;display:flex;background:var(--bg);height:100dvh}
 /* Pull-to-refresh indicator */
 .ptr{position:fixed;top:0;left:0;right:0;height:0;z-index:250;display:flex;align-items:center;justify-content:center;pointer-events:none;transition:height .2s var(--ease);overflow:hidden}
 .ptr.active{transition:none}
@@ -89,7 +89,7 @@ button,input,textarea{font:inherit;color:inherit}button{cursor:pointer;backgroun
 .sub{font-size:12.5px;color:var(--mute);margin-top:2px;display:flex;align-items:center;gap:6px}.sub i.dt{width:7px;height:7px;border-radius:50%;background:var(--faint);display:block}.sub.on{color:var(--ok)}.sub.on i.dt{background:var(--ok)}
 .searchbar{display:none;align-items:center;gap:10px;padding:10px 20px;background:var(--panel);border-bottom:1px solid var(--line)}.searchbar.show{display:flex}
 .searchbar input{flex:1;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);outline:none;font-size:14px}.searchbar input:focus{border-color:var(--acc)}.searchbar .c{font-size:12px;color:var(--mute);white-space:nowrap}
-.msgs{flex:1;overflow-y:auto;padding:22px clamp(14px,4vw,56px) 12px;display:flex;flex-direction:column;gap:3px;overscroll-behavior:contain}
+.msgs{flex:1;overflow-y:auto;padding:22px clamp(14px,4vw,56px) 12px;display:flex;flex-direction:column;gap:3px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .day{align-self:center;margin:14px 0 8px}.day span{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--mute);background:var(--panel);border:1px solid var(--line);padding:4px 12px;border-radius:20px;text-transform:uppercase}
 .row{display:flex;margin-top:2px;touch-action:pan-y}.row.grouped{margin-top:0}.row.out{justify-content:flex-end}.row.anim{animation:rise .35s var(--spring)}
 .row.drag{user-select:none}.wrap{max-width:min(78%,560px);display:flex;flex-direction:column;transition:transform .2s var(--spring)}.row.drag .wrap{transition:none}
@@ -105,7 +105,9 @@ button,input,textarea{font:inherit;color:inherit}button{cursor:pointer;backgroun
 .bub mark{background:rgba(255,190,50,.55);color:inherit;border-radius:3px;padding:0 1px}
 .state{margin:auto;text-align:center;color:var(--mute);max-width:320px;line-height:1.55;display:flex;flex-direction:column;align-items:center;gap:12px;padding:24px}.state [data-lucide]{width:44px;height:44px;stroke-width:1.3;color:var(--faint)}.state h4{color:var(--ink);font:700 19px var(--disp)}
 .sk{height:38px;border-radius:19px;background:linear-gradient(90deg,var(--in),var(--line),var(--in));background-size:200% 100%;animation:shim 1.4s linear infinite;width:55%;margin-top:6px}.sk.r{align-self:flex-end;width:40%}
-.cw{flex-shrink:0;background:var(--panel);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);position:relative;z-index:30}
+/* composer & keyboard handling */
+.cw{flex-shrink:0;background:var(--panel);border-top:1px solid var(--line);position:relative;z-index:30;padding-bottom:env(safe-area-inset-bottom,0px);transition:padding-bottom .15s ease-out}
+body.keyboard-open .cw{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
 .rbar{display:none;align-items:center;gap:10px;padding:8px clamp(12px,4vw,24px);border-bottom:1px solid var(--line);background:var(--in)}.rbar.show{display:flex}
 .rbar .tx{flex:1;min-width:0}.rbar b{display:block;font-size:12px;color:var(--acc)}.rbar span{display:block;font-size:13px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .comp{display:flex;align-items:flex-end;gap:8px;padding:10px clamp(12px,4vw,24px) 12px}
@@ -121,7 +123,7 @@ button,input,textarea{font:inherit;color:inherit}button{cursor:pointer;backgroun
 .qi{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;width:100%;text-align:left;font-size:14.5px}.qi:hover{background:var(--in)}.qi span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.qi [data-lucide]{color:var(--acc)}
 .ql{max-height:200px;overflow-y:auto}.qe{text-align:center;color:var(--mute);font-size:13px;padding:14px}
 .qa{display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}.qa input{flex:1;min-width:0;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-size:14px;outline:none}.qa button{padding:0 14px;border-radius:10px;background:var(--acc);color:#fff;font-weight:600;font-size:13px}
-#emojiPop{padding:0;overflow:hidden;left:clamp(12px,4vw,70px);width:min(calc(100vw - 24px),352px);height:380px;border-radius:16px}
+#emojiPop{padding:0;overflow:hidden;left:clamp(12px,4vw,70px);width:min(calc(100vw - 24px),352px);height:min(380px,calc(100dvh - 200px));border-radius:16px}
 .emoji-picker-container{width:100%;height:100%;display:flex;flex-direction:column;background:var(--card);border-radius:16px;overflow:hidden}
 .emoji-picker-header{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);flex-shrink:0}
 .emoji-search{flex:1;padding:8px 12px;border-radius:20px;border:1px solid var(--line);background:var(--in);font-size:14px;outline:none}
@@ -385,6 +387,54 @@ button,input,textarea{font:inherit;color:inherit}button{cursor:pointer;backgroun
     ri();
     const err = $('authErr');
     if (err) { err.textContent = 'Session could not be restored. Please sign in again.'; err.classList.add('show'); }
+  }
+
+  /* ---------- KEYBOARD HANDLING (Visual Viewport API) ---------- */
+  function setupKeyboardHandling() {
+    if (!window.visualViewport) {
+      // Fallback: viewport resize event
+      let lastHeight = window.innerHeight;
+      window.addEventListener('resize', () => {
+        const keyboardHeight = lastHeight - window.innerHeight;
+        if (keyboardHeight > 100) {
+          document.body.classList.add('keyboard-open');
+          document.body.style.setProperty('--keyboard-height', keyboardHeight + 'px');
+        } else {
+          document.body.classList.remove('keyboard-open');
+          document.body.style.removeProperty('--keyboard-height');
+        }
+        lastHeight = window.innerHeight;
+      });
+      return;
+    }
+
+    const vv = window.visualViewport;
+    let rafId = null;
+
+    function updateKeyboardState() {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const keyboardHeight = window.innerHeight - vv.height;
+        const isKeyboardOpen = keyboardHeight > 100;
+
+        if (isKeyboardOpen) {
+          document.body.classList.add('keyboard-open');
+          document.body.style.setProperty('--keyboard-height', keyboardHeight + 'px');
+          // Scroll to bottom of messages so the latest message is visible
+          const msgs = document.getElementById('msgs');
+          if (msgs && S.profile?.partnerId) {
+            msgs.scrollTop = msgs.scrollHeight;
+          }
+        } else {
+          document.body.classList.remove('keyboard-open');
+          document.body.style.removeProperty('--keyboard-height');
+        }
+      });
+    }
+
+    vv.addEventListener('resize', updateKeyboardState);
+    vv.addEventListener('scroll', updateKeyboardState);
+    updateKeyboardState();
   }
 
   /* ---------- PULL TO REFRESH ---------- */
@@ -1079,6 +1129,7 @@ button,input,textarea{font:inherit;color:inherit}button{cursor:pointer;backgroun
     loadLockPrefs();
     bind();
     bindPullToRefresh();
+    setupKeyboardHandling();
     setAuthMode('login');
     ri();
 
