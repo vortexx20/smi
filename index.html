@@ -649,6 +649,8 @@ const initials = (n) => { const p = (n || '?').trim().split(/\s+/); return (p.le
 const mobile = () => window.matchMedia('(max-width:899px)').matches;
 const DEFAULT_QR = ['Thinking of you', 'Call when free', 'On my way'];
 const STALE_MS = 300000, ONLINE_MS = 75000, BOOT_TIMEOUT_MS = 10000, PAGE = 150;
+/* FIX: localStorage key for the currently-selected chat partner */
+const ACTIVE_PEER_KEY = 'insha_active_peer';
 /* Paste the "Web Push certificate" key pair (public key) from Firebase Console > Project settings > Cloud Messaging */
 const VAPID_KEY = 'PASTE_YOUR_WEB_PUSH_CERTIFICATE_KEY_HERE';
 
@@ -706,6 +708,11 @@ const avHTML = (name, url) => { const u = safeImg(url); return u ? `<img src="${
 const setBusy = (btn, on) => { btn.disabled = on; const sp = btn.querySelector('.spin'); if (on && !sp) { const s = document.createElement('span'); s.className = 'spin'; btn.appendChild(s); } if (!on && sp) sp.remove(); };
 const totalUnread = () => Object.values(S.unread).reduce((a, b) => a + b, 0);
 function updateTitle() { const n = totalUnread(); document.title = n ? `(${n}) INSHA · Private chat` : 'INSHA · Private chat'; }
+
+/* FIX: persist / read / clear the active chat partner id */
+function saveActivePeer(pid) { try { if (pid) localStorage.setItem(ACTIVE_PEER_KEY, pid); else localStorage.removeItem(ACTIVE_PEER_KEY); } catch (e) {} }
+function readActivePeer() { try { return localStorage.getItem(ACTIVE_PEER_KEY) || null; } catch (e) { return null; } }
+function clearActivePeer() { try { localStorage.removeItem(ACTIVE_PEER_KEY); } catch (e) {} }
 
 /* ---------- routing ---------- */
 function safeShow(...ids) { ['bootScreen', 'authScreen', 'pairScreen', 'appScreen'].forEach((i) => $(i).classList.toggle('hidden', !ids.includes(i))); }
@@ -943,6 +950,8 @@ async function handleRequests() {
 async function unpair(pid) {
   const { doc, updateDoc, arrayRemove, db, auth } = F();
   await updateDoc(doc(db, 'users', auth.currentUser.uid), { partners: arrayRemove(pid) });
+  /* FIX: if we just disconnected the active chat, drop the persisted pointer */
+  if (S.active === pid) clearActivePeer();
 }
 async function setPresence(on) { if (!S.user) return; try { const { doc, updateDoc, db, auth } = F(); await updateDoc(doc(db, 'users', auth.currentUser.uid), { online: on, lastSeen: Date.now() }); } catch (e) {} }
 const beat = () => { if (!document.hidden) setPresence(true); };
@@ -957,11 +966,19 @@ function syncPeers(ids) {
       if (!ps.exists()) return;
       const pd = ps.data(); S.peers.set(id, { uid: id, ...pd });
       if (linkedTo(pd, me)) S.linked.add(id);
-      else if (S.linked.delete(id) && myPeers().includes(id)) updateDoc(doc(db, 'users', me), { partners: arrayRemove(id) }).catch(() => {});   /* partner unlinked us */
+      else if (S.linked.delete(id) && myPeers().includes(id)) {
+        updateDoc(doc(db, 'users', me), { partners: arrayRemove(id) }).catch(() => {});   /* partner unlinked us */
+        if (S.active === id) clearActivePeer();   /* FIX: don't keep a stale active id */
+      }
       sched('head', 'list', 'pair', 'side');
     }, () => {}));
   });
-  if (!ids.includes(S.active)) S.active = ids[0] || null;
+  /* FIX: restore previously-selected partner on reload instead of always defaulting to ids[0] */
+  if (!ids.includes(S.active)) {
+    const saved = readActivePeer();
+    S.active = (saved && ids.includes(saved)) ? saved : (ids[0] || null);
+    if (S.active) saveActivePeer(S.active);
+  }
 }
 function watchProfile() {
   const { doc, onSnapshot, updateDoc, db, auth } = F();
@@ -1021,7 +1038,9 @@ function startChat() {
 function settle() { sched('chat', 'list'); if (S.loaded.in && S.loaded.out) S.ready = true; }
 function setActive(pid) {
   if (!S.peers.has(pid)) return;
-  S.active = pid; S.limit = PAGE; S.unread[pid] = 0; S.q = ''; $('searchInput').value = ''; $('searchCount').textContent = ''; $('searchBar').classList.remove('show');
+  S.active = pid;
+  saveActivePeer(pid);   /* FIX: remember selection across reloads */
+  S.limit = PAGE; S.unread[pid] = 0; S.q = ''; $('searchInput').value = ''; $('searchCount').textContent = ''; $('searchBar').classList.remove('show');
   clearReply(); updateTitle(); sched('head', 'list', 'chat', 'composer', 'side'); scrollToBottom(true); if (mobile()) openSide(false);
 }
 
@@ -1343,6 +1362,8 @@ function enterOnce(user, name) {
 }
 function leave() {
   S.unsubs.forEach((u) => u()); S.unsubs = []; S.peerSubs.forEach((u) => u()); S.peerSubs.clear();
+  /* FIX: clear the persisted active peer on logout so a different account won't inherit it */
+  clearActivePeer();
   Object.assign(S, { user: null, profile: null, peers: new Map(), linked: new Set(), active: null, prevCount: undefined, enteredUid: null, msgs: new Map(), drawn: new Set(), loaded: { in: false, out: false }, ready: false, unread: {}, sentName: null, reqShown: null, quick: [...DEFAULT_QR], soundOn: true, deskOn: false, aliases: {}, hidden: new Set(), replyTo: null, editing: null, fcmToken: null });
   updateTitle(); openSide(false); ['settingsModal', 'qrModal', 'reqModal', 'reconModal'].forEach(closeM); stopScan(); safeShow('authScreen'); setAuthMode('login');
 }
