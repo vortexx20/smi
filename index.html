@@ -629,1003 +629,2618 @@ body.keyboard-open .comp{padding-bottom:6px}
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js";
   import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where, addDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
   import { getMessaging, getToken, isSupported } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-messaging.js";
+
   const app = initializeApp({
-    apiKey: "AIzaSyAB6oQOkOZUCDspV1l3WvEvAEPlg1rGEXo", authDomain: "insha-5077d.firebaseapp.com", projectId: "insha-5077d",
-    storageBucket: "insha-5077d.firebasestorage.app", messagingSenderId: "557464728268", appId: "1:557464728268:web:1624ca47b0dcfbf6bd4869", measurementId: "G-4RHJB80J4H"
+    apiKey: "AIzaSyAB6oQOkOZUCDspV1l3WvEvAEPlg1rGEXo",
+    authDomain: "insha-5077d.firebaseapp.com",
+    projectId: "insha-5077d",
+    storageBucket: "insha-5077d.firebasestorage.app",
+    messagingSenderId: "557464728268",
+    appId: "1:557464728268:web:1624ca47b0dcfbf6bd4869",
+    measurementId: "G-4RHJB80J4H"
   });
+
   const auth = getAuth(app);
   setPersistence(auth, browserLocalPersistence).catch(console.error);
-  window.__fb = { app, auth, db: getFirestore(app), createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, doc, setDoc, getDoc, getDocs, collection, query, where, addDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp, arrayUnion, arrayRemove, msg: { getMessaging, getToken, isSupported } };
+
+  window.__fb = {
+    app,
+    auth,
+    db: getFirestore(app),
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged,
+    doc,
+    setDoc,
+    getDoc,
+    getDocs,
+    collection,
+    query,
+    where,
+    addDoc,
+    onSnapshot,
+    updateDoc,
+    deleteDoc,
+    serverTimestamp,
+    arrayUnion,
+    arrayRemove,
+    msg: { getMessaging, getToken, isSupported }
+  };
+
   window.dispatchEvent(new Event('fb-ready'));
 </script>
 
 <script>
 (function () {
-'use strict';
-const $ = (id) => document.getElementById(id), F = () => window.__fb;
-const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const fmtTime = (ts) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-const initials = (n) => { const p = (n || '?').trim().split(/\s+/); return (p.length > 1 ? p[0][0] + p[1][0] : (n || '?').slice(0, 2)).toUpperCase(); };
-const mobile = () => window.matchMedia('(max-width:899px)').matches;
-const DEFAULT_QR = ['Thinking of you', 'Call when free', 'On my way'];
-const STALE_MS = 300000, ONLINE_MS = 75000, BOOT_TIMEOUT_MS = 10000, PAGE = 150;
-/* FIX: localStorage key for the currently-selected chat partner */
-const ACTIVE_PEER_KEY = 'insha_active_peer';
-/* Paste the "Web Push certificate" key pair (public key) from Firebase Console > Project settings > Cloud Messaging */
-const VAPID_KEY = 'PASTE_YOUR_WEB_PUSH_CERTIFICATE_KEY_HERE';
+  'use strict';
 
-/* inline icons for dynamic markup (avoids re-scanning the DOM with lucide on every render) */
-const P = {
-  'chevron-down': '<path d="m6 9 6 6 6-6"/>', 'message-circle': '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
-  'message-square': '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
-  pencil: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
-  'trash-2': '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
-  reply: '<polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>', forward: '<polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/>',
-  'rotate-cw': '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
-  copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
-  lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
-  search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
-  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
-  x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'
-};
-const I = (n, c) => `<svg class="ic ${c || ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${P[n] || ''}</svg>`;
-const ri = () => window.lucide && lucide.createIcons();
+  /* ============================================================
+   *  CONSTANTS
+   * ============================================================ */
+  const $ = (id) => document.getElementById(id);
+  const F = () => window.__fb;
 
-const S = {
-  user: null, profile: null, peers: new Map(), peerSubs: new Map(), linked: new Set(), active: null, prevCount: undefined,
-  quick: [...DEFAULT_QR], soundOn: true, deskOn: false, aliases: {}, hidden: new Set(),
-  msgs: new Map(), loaded: { in: false, out: false }, ready: false, drawn: new Set(), unread: {}, limit: PAGE,
-  pin: null, bioEnabled: false, autoLock: true, locked: false, pinTry: '',
-  replyTo: null, editing: null, q: '', authMode: 'login', registering: false, freshLogin: false, enteredUid: null,
-  booted: false, authResolved: false, notifyAsked: false, unsubs: [], swReg: null, fcmToken: null,
-  tmpAvatar: null, cropImg: null, cropState: null, pendingPeer: null, pendingPair: null, sentName: null, bannerPeer: null
-};
+  const DEFAULT_QR = ['Thinking of you', 'Call when free', 'On my way'];
+  const STALE_MS = 300000;
+  const ONLINE_MS = 75000;
+  const BOOT_TIMEOUT_MS = 10000;
+  const PAGE = 150;
 
-/* ---------- render scheduler: coalesces bursts of snapshots into one frame ---------- */
-const R = {}, dirty = new Set(); let raf = 0;
-function sched(...k) {
-  k.forEach((x) => dirty.add(x));
-  if (!raf) raf = requestAnimationFrame(() => { raf = 0; const d = [...dirty]; dirty.clear(); d.forEach((x) => R[x] && R[x]()); });
-}
+  /* Persisted key for the currently-selected chat partner.
+   * Restored on reload so the app lands back in the same thread. */
+  const ACTIVE_PEER_KEY = 'insha_active_peer';
 
-let scrollRaf = 0;
-function scrollToBottom(force) {
-  const b = $('msgs'); if (!b) return;
-  if (!force && b.scrollHeight - b.scrollTop - b.clientHeight >= 160) return;
-  cancelAnimationFrame(scrollRaf);
-  scrollRaf = requestAnimationFrame(() => requestAnimationFrame(() => { b.scrollTop = b.scrollHeight; }));
-}
+  /* Paste the "Web Push certificate" public key from Firebase Console >
+   * Project settings > Cloud Messaging. */
+  const VAPID_KEY = 'PASTE_YOUR_WEB_PUSH_CERTIFICATE_KEY_HERE';
 
-/* ---------- helpers ---------- */
-const myPeers = () => S.profile?.partners || [];
-const linkedTo = (pd, uid) => !!pd && ((pd.partners || []).includes(uid) || pd.partnerId === uid);
-const pname = (uid = S.active) => S.aliases[uid] || S.peers.get(uid)?.displayName || 'Partner';
-const isOnline = (p) => !!(p && p.online !== false && p.lastSeen && Date.now() - p.lastSeen < ONLINE_MS);
-const lastSeenText = (p) => { const l = p?.lastSeen; if (!l) return 'Offline'; const m = Math.floor((Date.now() - l) / 60000); return m < 1 ? 'Offline' : m < 60 ? `Last seen ${m}m ago` : `Last seen ${fmtTime(l)}`; };
-const safeImg = (u) => (typeof u === 'string' && u.length < 300000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(u)) ? u : null;
-function setAvatar(el, name, url) { el.innerHTML = ''; url = safeImg(url); if (url) { const i = document.createElement('img'); i.src = url; el.appendChild(i); } else el.textContent = initials(name); }
-const avHTML = (name, url) => { const u = safeImg(url); return u ? `<img src="${u}" alt="">` : esc(initials(name)); };
-const setBusy = (btn, on) => { btn.disabled = on; const sp = btn.querySelector('.spin'); if (on && !sp) { const s = document.createElement('span'); s.className = 'spin'; btn.appendChild(s); } if (!on && sp) sp.remove(); };
-const totalUnread = () => Object.values(S.unread).reduce((a, b) => a + b, 0);
-function updateTitle() { const n = totalUnread(); document.title = n ? `(${n}) INSHA · Private chat` : 'INSHA · Private chat'; }
+  /* ============================================================
+   *  UTILITIES
+   * ============================================================ */
+  const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
 
-/* FIX: persist / read / clear the active chat partner id */
-function saveActivePeer(pid) { try { if (pid) localStorage.setItem(ACTIVE_PEER_KEY, pid); else localStorage.removeItem(ACTIVE_PEER_KEY); } catch (e) {} }
-function readActivePeer() { try { return localStorage.getItem(ACTIVE_PEER_KEY) || null; } catch (e) { return null; } }
-function clearActivePeer() { try { localStorage.removeItem(ACTIVE_PEER_KEY); } catch (e) {} }
+  const fmtTime = (ts) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-/* ---------- routing ---------- */
-function safeShow(...ids) { ['bootScreen', 'authScreen', 'pairScreen', 'appScreen'].forEach((i) => $(i).classList.toggle('hidden', !ids.includes(i))); }
-function fallbackToAuth(reason, msg) {
-  console.warn('[fallback]', reason); if (S.user && S.profile) return;
-  safeShow('authScreen'); setAuthMode('login');
-  if (msg) { $('authErr').textContent = msg; $('authErr').classList.add('show'); }
-}
+  const initials = (n) => {
+    const p = (n || '?').trim().split(/\s+/);
+    return (p.length > 1 ? p[0][0] + p[1][0] : (n || '?').slice(0, 2)).toUpperCase();
+  };
 
-/* ---------- banner / sound / modals ---------- */
-let bT = 0;
-function banner(title, text, peer) {
-  S.bannerPeer = peer || null;
-  $('bTitle').textContent = title; $('bText').textContent = text; $('bTime').textContent = fmtTime(Date.now());
-  $('banner').classList.add('show'); clearTimeout(bT); bT = setTimeout(() => $('banner').classList.remove('show'), 4200);
-}
-let audio = null;
-const unlockAudio = () => { try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); } catch (e) {} };
-['click', 'touchstart', 'keydown'].forEach((e) => document.addEventListener(e, unlockAudio, { passive: true }));
-function chime() {
-  if (!S.soundOn) return;
-  try {
-    unlockAudio(); const t = audio.currentTime;
-    [880, 1175].forEach((f, i) => {
-      const o = audio.createOscillator(), g = audio.createGain(), s = t + i * .12;
-      o.frequency.value = f; o.connect(g); g.connect(audio.destination);
-      g.gain.setValueAtTime(.0001, s); g.gain.exponentialRampToValueAtTime(.12, s + .02); g.gain.exponentialRampToValueAtTime(.0001, s + .28);
-      o.start(s); o.stop(s + .3);
-    });
-  } catch (e) {}
-}
-const vibrate = (p) => { if (S.soundOn) try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
-const openM = (id) => $(id).classList.add('show'), closeM = (id) => $(id).classList.remove('show');
-let modalDone = null;
-const confirmBox = (title, desc, yes) => new Promise((res) => { modalDone = res; $('mTitle').textContent = title; $('mDesc').textContent = desc; $('mYes').textContent = yes || 'Confirm'; openM('modal'); });
-const closeModal = (v) => { closeM('modal'); if (modalDone) { modalDone(v); modalDone = null; } };
-function fbFail(e, title) {
-  if (e && (e.code === 'permission-denied' || /permission/i.test(e.message || '')))
-    confirmBox('Firestore rules need updating', 'Firebase blocked this action. Open Firebase Console > Firestore Database > Rules, paste the contents of the firestore.rules file that came with this app, then press Publish and try again.', 'Got it');
-  else banner(title, (e && e.message) || 'Something went wrong.');
-}
+  const mobile = () => window.matchMedia('(max-width:899px)').matches;
 
-/* ---------- prefs ---------- */
-const PREF_KEYS = ['quick', 'soundOn', 'deskOn'];
-const prefKey = () => 'insha_chat_prefs_' + (F().auth.currentUser?.uid || 'anon');
-function loadPrefs(profile) {
-  let local = null; try { local = JSON.parse(localStorage.getItem(prefKey()) || 'null'); } catch (e) {}
-  const cloud = profile?.chatPrefs || null;
-  const best = local && cloud ? ((local.savedAt || 0) >= (cloud.savedAt || 0) ? local : cloud) : (local || cloud);
-  if (!best) return;
-  PREF_KEYS.forEach((k) => { if (best[k] != null) S[k] = best[k]; });
-  if (!Array.isArray(S.quick)) S.quick = [...DEFAULT_QR];
-  S.aliases = { ...(best.aliases || {}) };
-  const first = (profile.partners || [])[0];
-  if (best.partnerAlias && first && !S.aliases[first]) S.aliases[first] = best.partnerAlias;
-  if (Array.isArray(best.hiddenMsgIds)) S.hidden = new Set(best.hiddenMsgIds);
-}
-let pT = 0;
-function savePrefs() {
-  const p = { savedAt: Date.now(), aliases: S.aliases, hiddenMsgIds: [...S.hidden].slice(-2000) }; PREF_KEYS.forEach((k) => { p[k] = S[k]; });
-  try { localStorage.setItem(prefKey(), JSON.stringify(p)); } catch (e) {}
-  clearTimeout(pT);
-  pT = setTimeout(async () => { try { const { doc, updateDoc, db, auth } = F(); await updateDoc(doc(db, 'users', auth.currentUser.uid), { chatPrefs: p }); } catch (e) { console.warn('[prefs]', e.message); } }, 600);
-}
-const seenKey = (u) => 'insha_chat_seen_' + u;
-const loadSeen = (u) => { try { return new Set(JSON.parse(localStorage.getItem(seenKey(u)) || '[]')); } catch (e) { return new Set(); } };
-const saveSeen = (u, s) => { try { localStorage.setItem(seenKey(u), JSON.stringify([...s].slice(-400))); } catch (e) {} };
+  const safeImg = (u) =>
+    (typeof u === 'string' && u.length < 300000 &&
+      /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(u)) ? u : null;
 
-/* ---------- passcode ---------- */
-const PIN_KEY = 'insha_pin', BIO_KEY = 'insha_bio', AL_KEY = 'insha_autolock';
-function loadLockPrefs() {
-  S.pin = localStorage.getItem(PIN_KEY) || null; S.bioEnabled = localStorage.getItem(BIO_KEY) === '1'; S.autoLock = localStorage.getItem(AL_KEY) !== '0';
-  $('bioToggle').checked = S.bioEnabled; $('autoLockToggle').checked = S.autoLock; $('passToggle').checked = !!S.pin;
-  $('lockStatus').textContent = S.pin ? 'On' : 'Off'; $('changePass').classList.toggle('hidden', !S.pin);
-}
-const bioOK = () => !!(window.PublicKeyCredential && navigator.credentials && window.isSecureContext);
-async function tryBio() {
-  if (!S.bioEnabled || !S.pin || !bioOK()) return false;
-  try {
-    const ch = new Uint8Array(32); crypto.getRandomValues(ch);
-    return !!(await navigator.credentials.create({ publicKey: { challenge: ch, rp: { name: 'INSHA' }, user: { id: new Uint8Array(16), name: 'insha-user', displayName: 'INSHA User' }, pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }], authenticatorSelection: { userVerification: 'required', authenticatorAttachment: 'platform' }, timeout: 30000 } }));
-  } catch (e) { return false; }
-}
-function pinPad(el, onD, onDel) {
-  el.innerHTML = '';
-  const mk = (t, cls, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'key' + (cls ? ' ' + cls : ''); b.textContent = t; if (fn) b.addEventListener('click', fn); el.appendChild(b); };
-  '123456789'.split('').forEach((k) => mk(k, '', () => onD(k))); mk('', 'g'); mk('0', '', () => onD('0')); mk('Del', 'g', onDel);
-}
-const dots = (el, n, err) => el.querySelectorAll('.d').forEach((d, i) => { d.classList.toggle('on', i < n); d.classList.toggle('err', !!err && i < n); });
-function openLock() {
-  if (!S.pin) return;
-  S.locked = true; S.pinTry = ''; dots($('pinDots'), 0);
-  $('bioBtn').classList.toggle('hidden', !(S.bioEnabled && bioOK()));
-  pinPad($('pinPad'), (d) => {
-    if (S.pinTry.length >= 4) return;
-    S.pinTry += d; dots($('pinDots'), S.pinTry.length);
-    if (S.pinTry.length < 4) return;
-    if (S.pinTry === S.pin) setTimeout(closeLock, 150);
-    else { dots($('pinDots'), 4, true); setTimeout(() => { S.pinTry = ''; dots($('pinDots'), 0); }, 500); banner('Wrong passcode', 'Try again.'); }
-  }, () => { S.pinTry = S.pinTry.slice(0, -1); dots($('pinDots'), S.pinTry.length); });
-  $('lockScreen').classList.add('show');
-}
-function closeLock() { S.locked = false; S.pinTry = ''; $('lockScreen').classList.remove('show'); }
-function openSetPass() {
-  const h = $('passModal').querySelector('h3'), p = $('passModal').querySelector('p');
-  let first = '', cur = '';
-  h.textContent = 'Set passcode'; p.textContent = 'Choose a 4-digit passcode to protect INSHA on this device.'; dots($('setPinDots'), 0);
-  pinPad($('setPinPad'), (d) => {
-    if (cur.length >= 4) return;
-    cur += d; dots($('setPinDots'), cur.length); if (cur.length < 4) return;
-    if (!first) { first = cur; cur = ''; setTimeout(() => { dots($('setPinDots'), 0); h.textContent = 'Confirm passcode'; p.textContent = 'Re-enter your 4-digit passcode.'; }, 200); }
-    else if (cur === first) { localStorage.setItem(PIN_KEY, first); closeM('passModal'); loadLockPrefs(); banner('Password protection on', 'INSHA is now protected.'); }
-    else { dots($('setPinDots'), 4, true); setTimeout(() => { closeM('passModal'); loadLockPrefs(); banner('Passcodes did not match', 'Try again.'); }, 600); }
-  }, () => { cur = cur.slice(0, -1); dots($('setPinDots'), cur.length); });
-  openM('passModal');
-}
-
-/* ---------- nav ---------- */
-const openSide = (v) => { $('nav').classList.toggle('open', v); $('scrim').classList.toggle('show', v); $('sideClose').style.display = v ? 'grid' : 'none'; };
-const expandSide = () => { $('nav').classList.remove('collapsed'); localStorage.setItem('insha_side', '1'); };
-const toggleSide = () => { if (mobile()) return openSide(!$('nav').classList.contains('open')); const c = $('nav').classList.toggle('collapsed'); localStorage.setItem('insha_side', c ? '0' : '1'); };
-const openSettings = () => { loadLockPrefs(); sched('side'); openM('settingsModal'); openSide(false); };
-
-/* ---------- notifications (system + FCM push) ---------- */
-function syncNotify() {
-  const b = $('notifyBtn'), ok = 'Notification' in window;
-  b.style.display = ok ? '' : 'none'; if (!ok) return;
-  const perm = Notification.permission;
-  b.classList.toggle('on', perm !== 'default'); $('notifyBtnText').textContent = perm === 'granted' ? 'Notifications enabled' : perm === 'denied' ? 'Notifications blocked' : 'Enable Notifications';
-  $('deskToggle').checked = S.deskOn && perm === 'granted';
-}
-async function notify(title, body, data) {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  data = data || {};
-  const o = { body, tag: data.tag || 'insha-' + (data.peer || 'x'), icon: 'icon.svg', badge: 'icon.svg', renotify: true, data };
-  try { if (S.swReg) return await S.swReg.showNotification(title, o); const n = new Notification(title, o); n.onclick = () => { window.focus(); openFromNotification(data); n.close(); }; } catch (e) {}
-}
-async function setupPush() {
-  if (!S.swReg || !('Notification' in window) || Notification.permission !== 'granted' || VAPID_KEY.startsWith('PASTE') || !S.user) return;
-  try {
-    const { msg, app, db, doc, updateDoc, arrayUnion, auth } = F();
-    if (!(await msg.isSupported())) return;
-    const reg = await navigator.serviceWorker.ready;
-    const token = await msg.getToken(msg.getMessaging(app), { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
-    S.fcmToken = token;
-    if (token && !(S.profile?.fcmTokens || []).includes(token)) await updateDoc(doc(db, 'users', auth.currentUser.uid), { fcmTokens: arrayUnion(token) });
-  } catch (e) { console.warn('[push]', e.message); }
-}
-async function askNotifications() {
-  if (!('Notification' in window)) { banner('Not supported', 'This browser does not support notifications.'); return false; }
-  let p = Notification.permission; if (p === 'default') p = await Notification.requestPermission();
-  S.deskOn = p === 'granted'; savePrefs(); syncNotify();
-  if (p !== 'granted') { banner('Notifications blocked', 'Allow notifications in your browser settings to get alerts.'); return false; }
-  setupPush(); notify('INSHA', 'Notifications are on.', { tag: 'insha-test' }); return true;
-}
-function openFromNotification(d) {
-  ['settingsModal', 'qrModal', 'chatMenuModal', 'forwardModal', 'partnerProfileModal', 'renameModal', 'myProfileModal'].forEach(closeM); stopScan();
-  if (d && d.peer && S.peers.has(d.peer)) setActive(d.peer); else if (d && d.peer) S.pendingPeer = d.peer;
-  scrollToBottom(true);
-}
-function alertIncoming(m) {
-  const hidden = document.hidden, other = m.peer !== S.active;
-  if (hidden || other) { S.unread[m.peer] = (S.unread[m.peer] || 0) + 1; updateTitle(); sched('list'); }
-  if (hidden) { notify(pname(m.peer), m.text, { peer: m.peer }); vibrate([200, 100, 200]); } else vibrate([100, 50, 100]);
-  banner(pname(m.peer), m.text, m.peer); chime();
-}
-
-/* ---------- firebase data layer ---------- */
-const makeCode = () => { const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s = 'INSHA-'; for (let i = 0; i < 4; i++) s += c[Math.floor(Math.random() * c.length)]; return s; };
-async function getProfile(uid) { const { doc, getDoc, db } = F(); const s = await getDoc(doc(db, 'users', uid)); return s.exists() ? s.data() : null; }
-async function ensureProfile(user, name) {
-  let p = await getProfile(user.uid); if (p) return p;
-  const { doc, setDoc, serverTimestamp, db } = F();
-  p = { displayName: name || (user.email || 'user').split('@')[0], email: user.email, partnerCode: makeCode(), partners: [], partnerId: null, bio: '' };
-  await setDoc(doc(db, 'users', user.uid), { ...p, createdAt: serverTimestamp() }); return p;
-}
-const normProfile = (p) => { p.partners = [...new Set([...(p.partners || []), ...(p.partnerId ? [p.partnerId] : [])])]; return p; };
-
-async function sendRequest(raw) {
-  const { collection, query, where, getDocs, doc, setDoc, db, auth } = F();
-  const me = auth.currentUser.uid, code = raw.trim().toUpperCase();
-  if (!code.startsWith('INSHA-')) throw new Error('Code must start with INSHA-');
-  const snap = await getDocs(query(collection(db, 'users'), where('partnerCode', '==', code)));
-  if (snap.empty) throw new Error('Invalid partner code');
-  const pid = snap.docs[0].id, pd = snap.docs[0].data();
-  if (pid === me) throw new Error('You cannot pair with yourself');
-  if (myPeers().includes(pid)) throw new Error('You are already connected to ' + (pd.displayName || 'this person'));
-  await setDoc(doc(db, 'pair_requests', me + '_' + pid), { from: me, to: pid, fromName: S.profile?.displayName || 'Someone', toName: pd.displayName || 'Partner', status: 'pending', createdAt: Date.now() });
-  S.sentName = pd.displayName || 'your partner'; sched('pair'); return pd;
-}
-async function acceptRequest(r) {
-  const { doc, updateDoc, arrayUnion, arrayRemove, db, auth } = F();
-  const me = auth.currentUser.uid, pid = r.from;
-  if (!(await getProfile(pid))) throw new Error('That account no longer exists');
-  await updateDoc(doc(db, 'users', me), { partners: arrayUnion(pid) });
-  try { await updateDoc(doc(db, 'pair_requests', r.id), { status: 'accepted' }); }
-  catch (e) { try { await updateDoc(doc(db, 'users', me), { partners: arrayRemove(pid) }); } catch (e2) {} throw e; }
-}
-async function declineRequest(r) { const { doc, updateDoc, db } = F(); try { await updateDoc(doc(db, 'pair_requests', r.id), { status: 'declined' }); } catch (e) { fbFail(e, 'Decline failed'); } }
-function watchRequests() {
-  const { collection, query, where, onSnapshot, db, auth } = F(), me = auth.currentUser.uid, q = (f) => query(collection(db, 'pair_requests'), where(f, '==', me));
-  S.reqIn = null; S.reqOut = [];
-  S.unsubs.push(
-    onSnapshot(q('to'), (snap) => { S.reqIn = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((r) => r.status === 'pending').sort((a, b) => b.createdAt - a.createdAt)[0] || null; handleRequests(); }, (e) => { console.warn('[requests-in]', e.message); fbFail(e, 'Requests'); }),
-    onSnapshot(q('from'), (snap) => { S.reqOut = snap.docs.map((d) => ({ id: d.id, ...d.data() })); handleRequests(); }, (e) => console.warn('[requests-out]', e.message))
-  );
-}
-async function handleRequests() {
-  if (!S.profile || !S.user) return;
-  const { doc, updateDoc, deleteDoc, arrayUnion, db, auth } = F(), me = auth.currentUser.uid;
-  const rin = S.reqIn && !myPeers().includes(S.reqIn.from) ? S.reqIn : null;
-  if (rin) {
-    const key = rin.id + ':' + rin.createdAt;
-    if (S.reqShown !== key) {
-      S.reqShown = key; const n = rin.fromName || 'Someone';
-      $('reqText').textContent = `${n} wants to connect with you. Accept to start your private chat.`;
-      ['reconModal', 'qrModal', 'settingsModal'].forEach(closeM); stopScan();   /* nothing may cover the Accept button */
-      openM('reqModal'); chime(); banner('Connection request', `${n} wants to connect.`);
-      if (document.hidden) notify('Connection request', `${n} wants to connect.`, { tag: 'insha-req', kind: 'request' });
+  function setAvatar(el, name, url) {
+    el.innerHTML = '';
+    url = safeImg(url);
+    if (url) {
+      const i = document.createElement('img');
+      i.src = url;
+      el.appendChild(i);
+    } else {
+      el.textContent = initials(name);
     }
-  } else closeM('reqModal');
-  const outs = S.reqOut || [];
-  for (const r of outs) {
-    if (r.status === 'accepted') {
-      if (S.finalizing === r.id) continue; S.finalizing = r.id;
-      try { if (!myPeers().includes(r.to)) await updateDoc(doc(db, 'users', me), { partners: arrayUnion(r.to) }); await deleteDoc(doc(db, 'pair_requests', r.id)); }
-      catch (e) { fbFail(e, 'Could not connect'); } finally { S.finalizing = null; }
-    } else if (r.status === 'declined') {
-      if (S.declSeen !== r.id + r.createdAt) { S.declSeen = r.id + r.createdAt; S.sentName = null; sched('pair'); banner('Request declined', `${r.toName || 'They'} declined your request.`); }
-      deleteDoc(doc(db, 'pair_requests', r.id)).catch(() => {});
-    } else if (r.status === 'pending') { S.sentName = r.toName || 'your partner'; sched('pair'); }
   }
-  if (S.sentName && !outs.some((r) => r.status === 'pending')) { S.sentName = null; sched('pair'); }
-}
-async function unpair(pid) {
-  const { doc, updateDoc, arrayRemove, db, auth } = F();
-  await updateDoc(doc(db, 'users', auth.currentUser.uid), { partners: arrayRemove(pid) });
-  /* FIX: if we just disconnected the active chat, drop the persisted pointer */
-  if (S.active === pid) clearActivePeer();
-}
-async function setPresence(on) { if (!S.user) return; try { const { doc, updateDoc, db, auth } = F(); await updateDoc(doc(db, 'users', auth.currentUser.uid), { online: on, lastSeen: Date.now() }); } catch (e) {} }
-const beat = () => { if (!document.hidden) setPresence(true); };
 
-function syncPeers(ids) {
-  const { doc, onSnapshot, updateDoc, arrayRemove, db, auth } = F(), me = auth.currentUser.uid;
-  for (const [id, u] of S.peerSubs) if (!ids.includes(id)) { u(); S.peerSubs.delete(id); S.peers.delete(id); S.linked.delete(id); }
-  ids.forEach((id) => {
-    if (S.peerSubs.has(id)) return;
-    S.peers.set(id, { uid: id });
-    S.peerSubs.set(id, onSnapshot(doc(db, 'users', id), (ps) => {
-      if (!ps.exists()) return;
-      const pd = ps.data(); S.peers.set(id, { uid: id, ...pd });
-      if (linkedTo(pd, me)) S.linked.add(id);
-      else if (S.linked.delete(id) && myPeers().includes(id)) {
-        updateDoc(doc(db, 'users', me), { partners: arrayRemove(id) }).catch(() => {});   /* partner unlinked us */
-        if (S.active === id) clearActivePeer();   /* FIX: don't keep a stale active id */
-      }
-      sched('head', 'list', 'pair', 'side');
-    }, () => {}));
-  });
-  /* FIX: restore previously-selected partner on reload instead of always defaulting to ids[0] */
-  if (!ids.includes(S.active)) {
-    const saved = readActivePeer();
-    S.active = (saved && ids.includes(saved)) ? saved : (ids[0] || null);
-    if (S.active) saveActivePeer(S.active);
-  }
-}
-function watchProfile() {
-  const { doc, onSnapshot, updateDoc, db, auth } = F();
-  S.unsubs.push(onSnapshot(doc(db, 'users', auth.currentUser.uid), (snap) => {
-    if (!snap.exists()) return;
-    const pr = normProfile(snap.data()), ids = pr.partners, n = ids.length; S.profile = pr;
-    if (snap.data().partnerId) updateDoc(snap.ref, { partners: ids, partnerId: null }).catch(() => {});   /* migrate legacy single partner */
-    syncPeers(ids);
-    if (n !== S.prevCount) {
-      const prev = S.prevCount; S.prevCount = n;
-      if (n && !prev) { closeM('reconModal'); closeM('reqModal'); S.sentName = null; safeShow('appScreen'); banner('Connected', 'You are now connected. Say hello.'); }
-      else if (n > prev) banner('Connected', 'New partner added.');
-      else if (n < prev) { banner('Disconnected', 'A partner link was closed.'); if (!n) { safeShow('pairScreen'); $('reconCode').textContent = pr.partnerCode || '-'; openM('reconModal'); } }
+  const avHTML = (name, url) => {
+    const u = safeImg(url);
+    return u ? `<img src="${u}" alt="">` : esc(initials(name));
+  };
+
+  const setBusy = (btn, on) => {
+    if (!btn) return;
+    btn.disabled = on;
+    const sp = btn.querySelector('.spin');
+    if (on && !sp) {
+      const s = document.createElement('span');
+      s.className = 'spin';
+      btn.appendChild(s);
     }
-    handleRequests(); sched('side', 'head', 'pair', 'list', 'chat', 'composer');
-    if (S.pendingPeer || S.pendingPair) applyPending();
-  }));
-}
-function applyPending() {
-  if (S.pendingPeer && S.peers.has(S.pendingPeer)) { setActive(S.pendingPeer); S.pendingPeer = null; }
-  if (S.pendingPair) {
-    const c = S.pendingPair; S.pendingPair = null;
-    if (c !== S.profile.partnerCode) confirmBox('Connect with this code?', `Send a connection request using ${c}?`, 'Send request').then((ok) => ok && pairWith(c));
-  }
-}
+    if (!on && sp) sp.remove();
+  };
 
-/* ---------- messages: one listener per direction for ALL partners ---------- */
-function toMsg(d, dir) {
-  const x = d.data();
-  return { id: d.id, text: x.text || '', dir, peer: dir === 'in' ? x.senderId : x.receiverId, ts: x.timestamp?.toMillis ? x.timestamp.toMillis() : Date.now(), edited: !!x.edited, replyTo: x.replyTo || null, forwarded: !!x.forwarded };
-}
-function startChat() {
-  const { collection, query, where, onSnapshot, db, auth } = F(), me = auth.currentUser.uid, seen = loadSeen(me);
-  let firstIn = true;
-  S.unsubs.push(
-    onSnapshot(query(collection(db, 'messages'), where('receiverId', '==', me)), (snap) => {
-      const initial = firstIn; firstIn = false; let anyNew = false, seenDirty = false;
-      snap.docChanges().forEach((ch) => {
-        if (ch.type === 'removed') { S.msgs.delete(ch.doc.id); return; }
-        const m = toMsg(ch.doc, 'in'); S.msgs.set(m.id, m);
-        if (ch.type !== 'added') return;
-        anyNew = true;
-        const silent = initial || seen.has(m.id) || Date.now() - m.ts > STALE_MS || !S.peers.has(m.peer);
-        if (!seen.has(m.id)) { seen.add(m.id); seenDirty = true; }
-        if (!silent) alertIncoming(m);
+  const totalUnread = () => Object.values(S.unread).reduce((a, b) => a + b, 0);
+
+  function updateTitle() {
+    const n = totalUnread();
+    document.title = n ? `(${n}) INSHA · Private chat` : 'INSHA · Private chat';
+  }
+
+  /* ---------- active-peer persistence ---------- */
+  function saveActivePeer(pid) {
+    try {
+      if (pid) localStorage.setItem(ACTIVE_PEER_KEY, pid);
+      else localStorage.removeItem(ACTIVE_PEER_KEY);
+    } catch (e) { /* storage may be unavailable (private mode, quota) */ }
+  }
+  function readActivePeer() {
+    try { return localStorage.getItem(ACTIVE_PEER_KEY) || null; }
+    catch (e) { return null; }
+  }
+  function clearActivePeer() {
+    try { localStorage.removeItem(ACTIVE_PEER_KEY); }
+    catch (e) { /* ignore */ }
+  }
+
+  /* ============================================================
+   *  INLINE SVG ICONS
+   * ============================================================ */
+  const P = {
+    'chevron-down': '<path d="m6 9 6 6 6-6"/>',
+    'message-circle': '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+    'message-square': '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+    'pencil': '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+    'trash-2': '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+    'reply': '<polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>',
+    'forward': '<polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/>',
+    'rotate-cw': '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
+    'copy': '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+    'lock': '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+    'search': '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+    'users': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    'x': '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'
+  };
+  const I = (n, c) => `<svg class="ic ${c || ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${P[n] || ''}</svg>`;
+  const ri = () => window.lucide && lucide.createIcons();
+
+  /* ============================================================
+   *  STATE
+   * ============================================================ */
+  const S = {
+    user: null,
+    profile: null,
+    peers: new Map(),
+    peerSubs: new Map(),
+    linked: new Set(),
+    active: null,
+    prevCount: undefined,
+    quick: [...DEFAULT_QR],
+    soundOn: true,
+    deskOn: false,
+    aliases: {},
+    hidden: new Set(),
+    msgs: new Map(),
+    loaded: { in: false, out: false },
+    ready: false,
+    drawn: new Set(),
+    unread: {},
+    limit: PAGE,
+    pin: null,
+    bioEnabled: false,
+    autoLock: true,
+    locked: false,
+    pinTry: '',
+    replyTo: null,
+    editing: null,
+    q: '',
+    authMode: 'login',
+    registering: false,
+    freshLogin: false,
+    enteredUid: null,
+    booted: false,
+    authResolved: false,
+    notifyAsked: false,
+    unsubs: [],
+    swReg: null,
+    fcmToken: null,
+    tmpAvatar: null,
+    cropImg: null,
+    cropState: null,
+    pendingPeer: null,
+    pendingPair: null,
+    sentName: null,
+    bannerPeer: null,
+    /* Scan state (previously undeclared) */
+    scanT: null,
+    stream: null,
+    /* Transient handlers used by handleRequests */
+    reqIn: null,
+    reqOut: [],
+    reqShown: null,
+    finalizing: null,
+    declSeen: null
+  };
+
+  /* ============================================================
+   *  RENDER SCHEDULER (coalesces bursts into one frame)
+   * ============================================================ */
+  const R = {};
+  const dirty = new Set();
+  let raf = 0;
+
+  function sched(...k) {
+    k.forEach((x) => dirty.add(x));
+    if (!raf) {
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const d = [...dirty];
+        dirty.clear();
+        d.forEach((x) => R[x] && R[x]());
       });
-      if (seenDirty) saveSeen(me, seen);
-      S.loaded.in = true; settle(); if (anyNew) scrollToBottom(true);
-    }, (e) => { console.error(e); fbFail(e, 'Sync error'); }),
-    onSnapshot(query(collection(db, 'messages'), where('senderId', '==', me)), (snap) => {
-      let anyNew = false;
-      snap.docChanges().forEach((ch) => { if (ch.type === 'removed') S.msgs.delete(ch.doc.id); else { S.msgs.set(ch.doc.id, toMsg(ch.doc, 'out')); anyNew = true; } });
-      S.loaded.out = true; settle(); if (anyNew) scrollToBottom(true);
-    }, (e) => console.error(e))
-  );
-}
-function settle() { sched('chat', 'list'); if (S.loaded.in && S.loaded.out) S.ready = true; }
-function setActive(pid) {
-  if (!S.peers.has(pid)) return;
-  S.active = pid;
-  saveActivePeer(pid);   /* FIX: remember selection across reloads */
-  S.limit = PAGE; S.unread[pid] = 0; S.q = ''; $('searchInput').value = ''; $('searchCount').textContent = ''; $('searchBar').classList.remove('show');
-  clearReply(); updateTitle(); sched('head', 'list', 'chat', 'composer', 'side'); scrollToBottom(true); if (mobile()) openSide(false);
-}
-
-async function send(raw) {
-  const text = (raw || '').trim(); if (!text) return;
-  const pid = S.active; if (!pid) return banner('Not paired', 'Pair with your partner first.');
-  const { collection, addDoc, doc, updateDoc, serverTimestamp, db, auth } = F();
-  try {
-    if (S.editing) { await updateDoc(doc(db, 'messages', S.editing), { text: text.slice(0, 2000), edited: true, editedAt: serverTimestamp() }); clearReply(); scrollToBottom(true); return; }
-    const payload = { senderId: auth.currentUser.uid, receiverId: pid, text: text.slice(0, 2000), type: 'normal', status: 'sent', timestamp: serverTimestamp() };
-    if (S.replyTo) payload.replyTo = { id: S.replyTo.id, text: S.replyTo.text.slice(0, 120), name: S.replyTo.dir === 'out' ? 'You' : pname(S.replyTo.peer) };
-    clearReply(); await addDoc(collection(db, 'messages'), payload); scrollToBottom(true);
-  } catch (e) { banner('Send failed', e.message); }
-}
-
-/* ---------- rendering ---------- */
-const dayLabel = (ts) => {
-  const d = new Date(ts), n = new Date(), y = new Date(); y.setDate(n.getDate() - 1);
-  const same = (a, b) => a.toDateString() === b.toDateString();
-  return same(d, n) ? 'Today' : same(d, y) ? 'Yesterday' : d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
-};
-function hl(text, q) {
-  if (!q) return esc(text);
-  const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-  return text.split(re).map((p, i) => i % 2 ? '<mark>' + esc(p) + '</mark>' : esc(p)).join('');
-}
-const visible = (peer = S.active) => { const a = []; S.msgs.forEach((m) => { if (m.peer === peer && !S.hidden.has(m.id)) a.push(m); }); return a.sort((x, y) => x.ts - y.ts); };
-
-R.chat = () => {
-  const box = $('msgs'), near = box.scrollHeight - box.scrollTop - box.clientHeight < 160;
-  if (!S.peers.size) {
-    box.innerHTML = `<div class="state">${I('lock')}<h4>Not paired yet</h4><span>Scan a QR code or enter your partner's code to open your private chat.</span><button class="sbtn" id="pairNow" style="padding:0 20px">Pair now</button></div>`;
-    $('pairNow').onclick = openQR; return;
+    }
   }
-  if (!(S.loaded.in && S.loaded.out)) { box.innerHTML = '<div class="sk"></div><div class="sk r"></div><div class="sk"></div>'; return; }
-  let list = visible(); const q = S.q;
-  if (q) { const lq = q.toLowerCase(); list = list.filter((m) => m.text.toLowerCase().includes(lq)); }
-  if (!list.length) {
-    box.innerHTML = q ? `<div class="state">${I('search')}<h4>No matches</h4><span>No messages found for "${esc(q)}".</span></div>` : `<div class="state">${I('message-circle')}<h4>Say hello</h4><span>This conversation is just between you and ${esc(pname())}.</span></div>`;
-    return;
+
+  let scrollRaf = 0;
+  function scrollToBottom(force) {
+    const b = $('msgs');
+    if (!b) return;
+    if (!force && b.scrollHeight - b.scrollTop - b.clientHeight >= 160) return;
+    cancelAnimationFrame(scrollRaf);
+    scrollRaf = requestAnimationFrame(() => requestAnimationFrame(() => {
+      b.scrollTop = b.scrollHeight;
+    }));
   }
-  const cut = !q && list.length > S.limit; if (cut) list = list.slice(-S.limit);
-  let html = cut ? '<button class="more" data-more>Show earlier messages</button>' : '', last = '', prev = null;
-  for (const m of list) {
-    const day = dayLabel(m.ts);
-    if (day !== last) { html += `<div class="day"><span>${day}</span></div>`; last = day; prev = null; }
-    const grouped = prev && prev.dir === m.dir && m.ts - prev.ts < 120000, anim = S.ready && !S.drawn.has(m.id) ? ' anim' : '';
-    const rp = m.replyTo ? `<div class="rp"><b>${esc(m.replyTo.name || '')}</b><span>${esc((m.replyTo.text || '').slice(0, 80))}</span></div>` : '';
-    const fw = m.forwarded ? `<div class="fw">${I('forward', 's')}Forwarded</div>` : '';
-    const meta = `<span class="meta">${m.edited ? '<em>edited</em>' : ''}${fmtTime(m.ts)}<button class="db" data-dots="${m.id}" aria-label="Message options">${I('chevron-down')}</button></span>`;
-    html += `<div class="row ${m.dir}${grouped ? ' grouped' : ''}${anim}" data-msg="${m.id}"><div class="wrap"><div class="bub">${rp}${fw}${hl(m.text, q)}${meta}</div></div></div>`;
-    S.drawn.add(m.id); prev = m;
+
+  /* ============================================================
+   *  DOMAIN HELPERS
+   * ============================================================ */
+  const myPeers = () => S.profile?.partners || [];
+
+  const linkedTo = (pd, uid) =>
+    !!pd && ((pd.partners || []).includes(uid) || pd.partnerId === uid);
+
+  const pname = (uid = S.active) =>
+    S.aliases[uid] || S.peers.get(uid)?.displayName || 'Partner';
+
+  const isOnline = (p) =>
+    !!(p && p.online !== false && p.lastSeen && Date.now() - p.lastSeen < ONLINE_MS);
+
+  const lastSeenText = (p) => {
+    const l = p?.lastSeen;
+    if (!l) return 'Offline';
+    const m = Math.floor((Date.now() - l) / 60000);
+    return m < 1 ? 'Offline' : m < 60 ? `Last seen ${m}m ago` : `Last seen ${fmtTime(l)}`;
+  };
+
+  /* ============================================================
+   *  ROUTING
+   * ============================================================ */
+  const SCREENS = ['bootScreen', 'authScreen', 'pairScreen', 'appScreen'];
+
+  function safeShow(...ids) {
+    SCREENS.forEach((i) => {
+      const el = $(i);
+      if (el) el.classList.toggle('hidden', !ids.includes(i));
+    });
   }
-  box.innerHTML = html;
-  if (near || !S.ready) scrollToBottom(true);
-};
-R.composer = () => {
-  const on = S.peers.size > 0;
-  $('msgInput').disabled = !on; $('sendBtn').disabled = !on;
-  $('msgInput').placeholder = on ? (S.editing ? 'Edit message…' : 'Write a message') : 'Pair to start chatting';
-  R.quick();
-};
-R.quick = () => {
-  $('qpList').innerHTML = !S.peers.size ? '<div class="qe">Pair with your partner to send quick messages.</div>'
-    : !S.quick.length ? '<div class="qe">No quick replies yet. Add one below.</div>'
-    : S.quick.map((q, i) => `<button class="qi" type="button" data-q="${i}">${I('message-square', 's')}<span>${esc(q)}</span></button>`).join('');
-};
-R.head = () => {
-  const p = S.peers.get(S.active), n = p ? pname() : 'No partner yet', on = isOnline(p);
-  $('peerName').textContent = n; setAvatar($('peerAv'), n, p?.avatarUrl);
-  $('peerSub').className = 'sub' + (p && on ? ' on' : '');
-  $('peerSub').innerHTML = `<i class="dt"></i><span>${p ? (on ? 'Online' : lastSeenText(p)) : 'Pair to start chatting'}</span>`;
-  $('rDot').className = 'sd' + (p && on ? ' on' : '');
-};
-R.list = () => {
-  const box = $('convoBox');
-  if (!S.peers.size) { box.innerHTML = `<div class="state" style="padding:20px 8px">${I('users')}<h4>No conversation yet</h4><span>Tap + to pair with your partner.</span></div>`; return; }
-  const last = {}; S.msgs.forEach((m) => { if (!S.hidden.has(m.id) && (!last[m.peer] || last[m.peer].ts < m.ts)) last[m.peer] = m; });
-  box.innerHTML = [...S.peers.values()].map((p) => {
-    const lm = last[p.uid], on = isOnline(p), u = S.unread[p.uid] || 0, n = pname(p.uid);
-    return `<button class="convo${p.uid === S.active ? ' sel' : ''}" data-peer="${p.uid}"><div class="avatar av-m">${avHTML(n, p.avatarUrl)}</div><div class="mid"><b><span>${esc(n)}</span><em>${lm ? fmtTime(lm.ts) : ''}</em></b><div class="pv">${lm ? (lm.dir === 'out' ? 'You: ' : '') + esc(lm.text) : 'Say hello'}</div><span class="badge${on ? ' on' : ''}"><i></i>${on ? 'Online' : 'Offline'}</span>${u ? ` <span class="cnt">${u}</span>` : ''}</div></button>`;
-  }).join('');
-};
-R.side = () => {
-  const pr = S.profile || {};
-  setAvatar($('meAv'), pr.displayName || 'User', pr.avatarUrl); $('meCode').textContent = pr.partnerCode || '-';
-  $('qrList').innerHTML = S.quick.length
-    ? S.quick.map((q, i) => `<div class="qr"><span>${esc(q)}</span><button class="ib" data-edit="${i}" aria-label="Edit">${I('pencil', 's')}</button><button class="ib d" data-del="${i}" aria-label="Delete">${I('trash-2', 's')}</button></div>`).join('')
-    : '<div style="font-size:13px;color:var(--mute);padding:6px 0">No quick replies yet.</div>';
-  $('peerList').innerHTML = S.peers.size
-    ? [...S.peers.values()].map((p) => `<div class="qr"><div class="avatar">${avHTML(pname(p.uid), p.avatarUrl)}</div><span>${esc(pname(p.uid))}</span><button class="ib d" data-unlink="${p.uid}" aria-label="Disconnect" title="Disconnect">${I('x', 's')}</button></div>`).join('')
-    : '<div style="font-size:13px;color:var(--mute);padding:8px 0">Nobody connected yet.</div>';
-  $('soundToggle').checked = S.soundOn; $('disconnect').style.display = S.active ? '' : 'none';
-  syncNotify();
-};
-R.pair = () => {
-  $('pairMyCode').textContent = S.profile?.partnerCode || 'INSHA-0000';
-  const w = $('pairWait'), n = S.peers.size; w.classList.toggle('ok', n > 0);
-  w.lastElementChild.textContent = n ? `Connected to ${[...S.peers.keys()].map((u) => pname(u)).join(', ')}` : (S.sentName ? `Request sent. Waiting for ${S.sentName} to accept...` : 'Waiting for partner...');
-};
-['chat', 'composer', 'head', 'list', 'side', 'pair'].forEach((k) => { const f = R[k]; R['_' + k] = f; });
 
-/* ---------- my profile + crop ---------- */
-function openMyProfile() {
-  if (!S.profile) return;
-  $('myDisplayName').value = S.profile.displayName || ''; $('myBio').value = S.profile.bio || '';
-  S.tmpAvatar = safeImg(S.profile.avatarUrl); setAvatar($('myAvatarPreview'), S.profile.displayName || '?', S.tmpAvatar);
-  openM('myProfileModal'); openSide(false);
-}
-function startCrop(file) {
-  return new Promise((res, rej) => {
-    const r = new FileReader(); r.onerror = rej;
-    r.onload = () => { const im = new Image(); im.onerror = rej; im.onload = () => { S.cropImg = im; S.cropState = { scale: 1, offsetX: 0, offsetY: 0, minScale: 1 }; openM('cropModal'); $('cropZoom').value = 1; requestAnimationFrame(resizeCrop); res(); }; im.src = r.result; };
-    r.readAsDataURL(file);
-  });
-}
-function resizeCrop() {
-  const cv = $('cropCanvas'), wrap = cv.parentElement, size = Math.min(wrap.clientWidth, wrap.clientHeight, 360) || 300;
-  cv.width = cv.height = size; cv.style.width = cv.style.height = size + 'px';
-  if (S.cropImg) { const m = Math.max(size / S.cropImg.width, size / S.cropImg.height); S.cropState.minScale = m; S.cropState.scale = Math.max(S.cropState.scale, m); clampCrop(); }
-  drawCrop();
-}
-function clampCrop() {
-  if (!S.cropImg) return;
-  const sz = $('cropCanvas').width, sc = S.cropState.scale, mx = Math.max(0, (S.cropImg.width * sc - sz) / 2), my = Math.max(0, (S.cropImg.height * sc - sz) / 2);
-  S.cropState.offsetX = Math.max(-mx, Math.min(mx, S.cropState.offsetX)); S.cropState.offsetY = Math.max(-my, Math.min(my, S.cropState.offsetY));
-}
-function drawCrop() {
-  const cv = $('cropCanvas'), ctx = cv.getContext('2d'), sz = cv.width;
-  ctx.clearRect(0, 0, sz, sz); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, sz, sz);
-  if (!S.cropImg) return;
-  const sc = S.cropState.scale, w = S.cropImg.width * sc, h = S.cropImg.height * sc;
-  ctx.drawImage(S.cropImg, (sz - w) / 2 + S.cropState.offsetX, (sz - h) / 2 + S.cropState.offsetY, w, h);
-  ctx.save(); ctx.globalCompositeOperation = 'destination-in'; ctx.beginPath(); ctx.arc(sz / 2, sz / 2, sz / 2 - 2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-}
-function bindCrop() {
-  const cv = $('cropCanvas'); let drag = null, pinch = null;
-  cv.addEventListener('pointerdown', (e) => { if (!S.cropImg) return; drag = { x: e.clientX, y: e.clientY, ox: S.cropState.offsetX, oy: S.cropState.offsetY }; try { cv.setPointerCapture(e.pointerId); } catch (_) {} });
-  cv.addEventListener('pointermove', (e) => { if (!drag) return; S.cropState.offsetX = drag.ox + e.clientX - drag.x; S.cropState.offsetY = drag.oy + e.clientY - drag.y; clampCrop(); drawCrop(); });
-  ['pointerup', 'pointercancel'].forEach((ev) => cv.addEventListener(ev, () => { drag = null; }));
-  const dist = (t) => Math.hypot(t[1].clientX - t[0].clientX, t[1].clientY - t[0].clientY);
-  cv.addEventListener('touchstart', (e) => { if (e.touches.length === 2) pinch = { d0: dist(e.touches), s0: S.cropState.scale }; }, { passive: true });
-  cv.addEventListener('touchmove', (e) => {
-    if (!pinch || e.touches.length !== 2) return;
-    const m = S.cropState.minScale; S.cropState.scale = Math.max(m, Math.min(m * 3, pinch.s0 * dist(e.touches) / pinch.d0));
-    $('cropZoom').value = S.cropState.scale / m; clampCrop(); drawCrop(); e.preventDefault();
-  }, { passive: false });
-  cv.addEventListener('touchend', () => { pinch = null; }, { passive: true });
-  $('cropZoom').addEventListener('input', (e) => { if (!S.cropState) return; S.cropState.scale = S.cropState.minScale * (parseFloat(e.target.value) || 1); clampCrop(); drawCrop(); });
-  $('cancelCrop').onclick = () => { S.cropImg = S.cropState = null; closeM('cropModal'); };
-  $('applyCrop').onclick = () => {
-    if (!S.cropImg) return;
-    const sz = cv.width, k = 512 / sz, out = document.createElement('canvas'); out.width = out.height = 512;
-    const sc = S.cropState.scale * k, w = S.cropImg.width * sc, h = S.cropImg.height * sc;
-    out.getContext('2d').drawImage(S.cropImg, (512 - w) / 2 + S.cropState.offsetX * k, (512 - h) / 2 + S.cropState.offsetY * k, w, h);
-    S.tmpAvatar = out.toDataURL('image/jpeg', .85); setAvatar($('myAvatarPreview'), '', S.tmpAvatar);
-    S.cropImg = S.cropState = null; closeM('cropModal');
-  };
-  window.addEventListener('resize', () => { if (S.cropImg && $('cropModal').classList.contains('show')) resizeCrop(); });
-}
-
-/* ---------- partner profile / rename ---------- */
-function openPartnerProfile() {
-  const p = S.peers.get(S.active); if (!p) return banner('No partner', 'Pair first.');
-  const orig = S.aliases[S.active] ? (p.displayName || 'Partner') : '', bio = (p.bio || '').trim();
-  $('partnerProfileName').textContent = pname(); $('partnerOrigName').textContent = orig ? `Real name: ${orig}` : ''; $('partnerOrigName').classList.toggle('hidden', !orig);
-  $('partnerProfileBio').textContent = bio || 'No bio yet.'; $('partnerProfileBio').classList.toggle('empty', !bio);
-  setAvatar($('partnerProfileAv'), pname(), p.avatarUrl); openM('partnerProfileModal');
-}
-function openRename() { if (!S.active) return banner('No partner', 'Pair first.'); $('renameInput').value = pname(); openM('renameModal'); }
-
-/* ---------- reply / edit / context menu ---------- */
-function setReply(m) { S.editing = null; S.replyTo = m; $('replyBar').classList.add('show'); $('replyName').textContent = 'Replying to ' + (m.dir === 'out' ? 'yourself' : pname(m.peer)); $('replyText').textContent = m.text.slice(0, 100); $('msgInput').focus(); }
-function setEdit(m) { S.replyTo = null; S.editing = m.id; $('replyBar').classList.add('show'); $('replyName').textContent = 'Editing message'; $('replyText').textContent = m.text.slice(0, 100); $('msgInput').value = m.text; $('msgInput').focus(); R.composer(); }
-function clearReply() { S.replyTo = null; if (S.editing) { S.editing = null; $('msgInput').value = ''; R.composer(); } $('replyBar').classList.remove('show'); }
-const closeCtx = () => $('ctx').classList.remove('show');
-function openCtx(m, x, y) {
-  const mine = m.dir === 'out', it = (a, ic, t, c) => `<button class="ci ${c || ''}" data-act="${a}">${I(ic)}${t}</button>`, menu = $('ctx');
-  menu.innerHTML = it('reply', 'reply', 'Reply') + (mine ? it('edit', 'pencil', 'Edit') : '') + it('forward', 'forward', 'Forward') + (mine ? it('resend', 'rotate-cw', 'Resend') : '') + '<div class="sep"></div>' + it('copy', 'copy', 'Copy text') + it('delete', 'trash-2', 'Delete for me', 'dg');
-  menu.classList.add('show');
-  const r = menu.getBoundingClientRect();
-  menu.style.left = Math.max(8, Math.min(x, innerWidth - r.width - 8)) + 'px'; menu.style.top = Math.max(8, Math.min(y, innerHeight - r.height - 8)) + 'px';
-  menu.querySelectorAll('.ci').forEach((b) => b.onclick = () => msgAction(b.dataset.act, m));
-}
-async function msgAction(act, m) {
-  closeCtx();
-  if (act === 'reply') return setReply(m);
-  if (act === 'edit') return setEdit(m);
-  if (act === 'forward') return openForward(m);
-  if (act === 'resend') {
-    const { doc, updateDoc, serverTimestamp, db } = F();
-    try { await updateDoc(doc(db, 'messages', m.id), { timestamp: serverTimestamp(), status: 'sent' }); banner('Resent', 'Message timestamp updated.'); } catch (e) { banner('Resend failed', e.message); }
-    return;
+  function fallbackToAuth(reason, msg) {
+    console.warn('[fallback]', reason);
+    if (S.user && S.profile) return;
+    safeShow('authScreen');
+    setAuthMode('login');
+    if (msg) {
+      $('authErr').textContent = msg;
+      $('authErr').classList.add('show');
+    }
   }
-  if (act === 'copy') { try { await navigator.clipboard.writeText(m.text); banner('Copied', 'Message copied.'); } catch { banner('Copy failed', 'Clipboard not available.'); } return; }
-  if (act === 'delete' && await confirmBox('Delete message', 'Hide this message from this device only?', 'Delete')) { S.hidden.add(m.id); savePrefs(); sched('chat', 'list'); }
-}
-function openForward(m) {
-  $('fwdList').innerHTML = [...S.peers.values()].map((p) => `<button class="fi" data-fwd="${p.uid}"><div class="avatar av-s">${avHTML(pname(p.uid), p.avatarUrl)}</div><span>${esc(pname(p.uid))}</span></button>`).join('');
-  $('fwdList').onclick = async (e) => {
-    const b = e.target.closest('[data-fwd]'); if (!b) return;
-    const { collection, addDoc, serverTimestamp, db, auth } = F();
-    try { await addDoc(collection(db, 'messages'), { senderId: auth.currentUser.uid, receiverId: b.dataset.fwd, text: m.text, type: 'normal', status: 'sent', timestamp: serverTimestamp(), forwarded: true }); banner('Forwarded', 'Message sent.'); closeM('forwardModal'); scrollToBottom(true); }
-    catch (er) { banner('Forward failed', er.message); }
+
+  /* ============================================================
+   *  BANNER / SOUND / MODALS
+   * ============================================================ */
+  let bT = 0;
+  function banner(title, text, peer) {
+    S.bannerPeer = peer || null;
+    $('bTitle').textContent = title;
+    $('bText').textContent = text;
+    $('bTime').textContent = fmtTime(Date.now());
+    $('banner').classList.add('show');
+    clearTimeout(bT);
+    bT = setTimeout(() => $('banner').classList.remove('show'), 4200);
+  }
+
+  let audio = null;
+  const unlockAudio = () => {
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume();
+    } catch (e) { /* audio unavailable */ }
   };
-  openM('forwardModal');
-}
-function bindMessages() {
-  const box = $('msgs'); let dr = null;
-  box.addEventListener('pointerdown', (e) => {
-    if (e.button > 0 || e.target.closest('button')) return;
-    const row = e.target.closest('.row'); if (!row) return;
-    dr = { row, x: e.clientX, y: e.clientY, on: false, d: 0, pid: e.pointerId };
-    try { box.setPointerCapture(e.pointerId); } catch (_) {}
-  });
-  box.addEventListener('pointermove', (e) => {
-    if (!dr || e.pointerId !== dr.pid) return;
-    const dx = e.clientX - dr.x, dy = e.clientY - dr.y;
-    if (!dr.on) { if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { dr = null; return; } if (Math.abs(dx) > 12) { dr.on = true; dr.row.classList.add('drag'); } }
-    if (dr.on) { e.preventDefault(); dr.d = Math.max(-100, Math.min(100, dx)); dr.row.querySelector('.wrap').style.transform = `translateX(${dr.d}px)`; }
-  }, { passive: false });
-  const end = () => {
-    if (!dr) return;
-    try { box.releasePointerCapture(dr.pid); } catch (_) {}
-    dr.row.classList.remove('drag'); const w = dr.row.querySelector('.wrap'); if (w) w.style.transform = '';
-    if (Math.abs(dr.d) > 55) { const m = S.msgs.get(dr.row.dataset.msg); if (m) setReply(m); }
-    dr = null;
+  ['click', 'touchstart', 'keydown'].forEach((e) =>
+    document.addEventListener(e, unlockAudio, { passive: true }));
+
+  function chime() {
+    if (!S.soundOn || !audio) return;
+    try {
+      unlockAudio();
+      const t = audio.currentTime;
+      [880, 1175].forEach((f, i) => {
+        const o = audio.createOscillator();
+        const g = audio.createGain();
+        const s = t + i * .12;
+        o.frequency.value = f;
+        o.connect(g);
+        g.connect(audio.destination);
+        g.gain.setValueAtTime(.0001, s);
+        g.gain.exponentialRampToValueAtTime(.12, s + .02);
+        g.gain.exponentialRampToValueAtTime(.0001, s + .28);
+        o.start(s);
+        o.stop(s + .3);
+      });
+    } catch (e) { /* audio failed, silent */ }
+  }
+
+  const vibrate = (p) => {
+    if (S.soundOn) {
+      try { navigator.vibrate && navigator.vibrate(p); } catch (e) { /* ignore */ }
+    }
   };
-  box.addEventListener('pointerup', end); box.addEventListener('pointercancel', end);
-  box.addEventListener('contextmenu', (e) => { const row = e.target.closest('.row'), m = row && S.msgs.get(row.dataset.msg); if (m) { e.preventDefault(); openCtx(m, e.clientX, e.clientY); } });
-  box.addEventListener('click', (e) => {
-    if (e.target.closest('[data-more]')) { const h = box.scrollHeight; S.limit += PAGE; R.chat(); box.scrollTop += box.scrollHeight - h; return; }
-    const b = e.target.closest('[data-dots]'), m = b && S.msgs.get(b.dataset.dots); if (!m) return;
-    const r = b.getBoundingClientRect(); openCtx(m, r.left - 150, r.bottom + 4);
-  });
-  box.addEventListener('scroll', closeCtx, { passive: true });
-}
 
-/* ---------- search / export ---------- */
-function openSearch() { $('searchBar').classList.add('show'); $('searchInput').focus(); }
-function closeSearch() { $('searchBar').classList.remove('show'); $('searchInput').value = ''; S.q = ''; $('searchCount').textContent = ''; R.chat(); }
-function download(name, type, content) {
-  const url = URL.createObjectURL(new Blob([content], { type })), a = document.createElement('a');
-  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
-}
-function exportChat(kind) {
-  closeM('chatMenuModal');
-  const list = [...S.msgs.values()].filter((m) => m.peer === S.active).sort((a, b) => a.ts - b.ts), who = pname();
-  if (!list.length) return banner('Nothing to export', 'Chat is empty.');
-  if (kind === 'json') download(`insha-chat-${Date.now()}.json`, 'application/json', JSON.stringify({ exportedAt: new Date().toISOString(), with: who, messages: list.map((m) => ({ id: m.id, from: m.dir === 'out' ? 'You' : who, text: m.text, time: new Date(m.ts).toISOString(), edited: m.edited, forwarded: m.forwarded })) }, null, 2));
-  else download(`insha-chat-${Date.now()}.txt`, 'text/plain', `INSHA Private Chat\nWith: ${who}\nExported: ${new Date().toLocaleString()}\n\n` + list.map((m) => `[${new Date(m.ts).toLocaleString()}] ${m.dir === 'out' ? 'You' : who}: ${m.text}${m.edited ? ' (edited)' : ''}`).join('\n') + '\n');
-  banner('Exported', 'Chat downloaded.');
-}
+  const openM = (id) => $(id).classList.add('show');
+  const closeM = (id) => $(id).classList.remove('show');
 
-/* ---------- QR pairing ---------- */
-const pairUrl = () => location.origin + location.pathname + '?pair=' + (S.profile?.partnerCode || '');
-function drawQR() {
-  const code = S.profile?.partnerCode || ''; $('qrCode').textContent = code;
-  try {
-    const q = qrcode(0, 'M'); q.addData(pairUrl()); q.make();
-    const n = q.getModuleCount(); let d = '';
-    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c + 2} ${r + 2}h1v1h-1z`;
-    $('qrBox').innerHTML = `<svg viewBox="0 0 ${n + 4} ${n + 4}" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
-  } catch (e) { $('qrBox').innerHTML = `<div style="color:#000;font:700 18px var(--mono);display:grid;place-items:center;height:100%">${esc(code)}</div>`; }
-}
-function openQR() { drawQR(); openM('qrModal'); openSide(false); closeM('settingsModal'); }
-const parseCode = (v) => { const m = /INSHA-[A-Z0-9]{4}/i.exec(v || ''); return m ? m[0].toUpperCase() : null; };
-function stopScan() {
-  clearInterval(S.scanT); S.scanT = null;
-  if (S.stream) { S.stream.getTracks().forEach((t) => t.stop()); S.stream = null; }
-  $('scanWrap').classList.add('hidden'); $('scanBtnText').textContent = "Scan partner's QR";
-}
-const loadJsQR = () => window.jsQR ? Promise.resolve() : new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
-async function toggleScan() {
-  if (S.stream) return stopScan();
-  try {
-    S.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    const v = $('scanVideo'); v.srcObject = S.stream; await v.play();
-    $('scanWrap').classList.remove('hidden'); $('scanBtnText').textContent = 'Stop scanning';
-    const det = 'BarcodeDetector' in window ? new BarcodeDetector({ formats: ['qr_code'] }) : null;
-    if (!det) await loadJsQR();
-    const cv = document.createElement('canvas'), cx = cv.getContext('2d', { willReadFrequently: true });
-    S.scanT = setInterval(async () => {
-      if (v.readyState < 2) return;
-      let val = null;
-      if (det) { const r = await det.detect(v).catch(() => []); val = r[0]?.rawValue; }
-      else { const k = Math.min(1, 480 / v.videoWidth); cv.width = v.videoWidth * k; cv.height = v.videoHeight * k; cx.drawImage(v, 0, 0, cv.width, cv.height); const r = jsQR(cx.getImageData(0, 0, cv.width, cv.height).data, cv.width, cv.height); val = r && r.data; }
-      const code = parseCode(val); if (code) { stopScan(); pairWith(code); }
-    }, 250);
-  } catch (e) { stopScan(); banner('Camera unavailable', 'Allow camera access, or type the code instead.'); }
-}
-async function pairWith(code, btn) {
-  if (btn) setBusy(btn, true);
-  try { const pd = await sendRequest(code); closeM('reconModal'); closeM('qrModal'); stopScan(); banner('Request sent', 'Waiting for ' + (pd.displayName || 'your partner') + ' to accept.'); return true; }
-  catch (e) { fbFail(e, 'Pair failed'); return false; }
-  finally { if (btn) setBusy(btn, false); }
-}
-function doPair(inp, btn) {
-  const c = inp.value.trim(); if (!c) return banner('No code', "Enter your partner's code.");
-  pairWith(c, btn).then((ok) => { if (ok) inp.value = ''; });
-}
-const copy = (t) => navigator.clipboard ? navigator.clipboard.writeText(t).then(() => banner('Copied', 'Code copied.')).catch(() => banner('Your code', t)) : banner('Your code', t);
+  let modalDone = null;
+  function confirmBox(title, desc, yes) {
+    return new Promise((res) => {
+      if (modalDone) { modalDone(false); modalDone = null; }
+      modalDone = res;
+      $('mTitle').textContent = title;
+      $('mDesc').textContent = desc;
+      $('mYes').textContent = yes || 'Confirm';
+      openM('modal');
+    });
+  }
+  function closeModal(v) {
+    closeM('modal');
+    if (modalDone) { modalDone(v); modalDone = null; }
+  }
 
-/* ---------- auth / session ---------- */
-async function enter(user, name) {
-  S.user = user; S.profile = normProfile(await ensureProfile(user, name));
-  loadPrefs(S.profile); S.prevCount = S.profile.partners.length;
-  watchProfile(); watchRequests(); startChat(); beat(); syncNotify();
-  safeShow(S.prevCount ? 'appScreen' : 'pairScreen');
-  sched('side', 'head', 'pair', 'list', 'chat', 'composer');
-  if (S.pin && !S.registering && !S.freshLogin) setTimeout(openLock, 300);
-}
-let enterJob = null;
-function enterOnce(user, name) {
-  if (S.enteredUid === user.uid) return Promise.resolve();
-  if (enterJob && enterJob.uid === user.uid) return enterJob.p;
-  const p = enter(user, name).then(() => { S.enteredUid = user.uid; }).catch((e) => { if (!S.profile) S.user = null; throw e; }).finally(() => { if (enterJob && enterJob.p === p) enterJob = null; });
-  enterJob = { uid: user.uid, p }; return p;
-}
-function leave() {
-  S.unsubs.forEach((u) => u()); S.unsubs = []; S.peerSubs.forEach((u) => u()); S.peerSubs.clear();
-  /* FIX: clear the persisted active peer on logout so a different account won't inherit it */
-  clearActivePeer();
-  Object.assign(S, { user: null, profile: null, peers: new Map(), linked: new Set(), active: null, prevCount: undefined, enteredUid: null, msgs: new Map(), drawn: new Set(), loaded: { in: false, out: false }, ready: false, unread: {}, sentName: null, reqShown: null, quick: [...DEFAULT_QR], soundOn: true, deskOn: false, aliases: {}, hidden: new Set(), replyTo: null, editing: null, fcmToken: null });
-  updateTitle(); openSide(false); ['settingsModal', 'qrModal', 'reqModal', 'reconModal'].forEach(closeM); stopScan(); safeShow('authScreen'); setAuthMode('login');
-}
-async function logout() {
-  await setPresence(false);
-  try { if (S.fcmToken) { const { doc, updateDoc, arrayRemove, db, auth } = F(); await updateDoc(doc(db, 'users', auth.currentUser.uid), { fcmTokens: arrayRemove(S.fcmToken) }); } } catch (e) {}
-  F().signOut(F().auth);
-}
-function setAuthMode(m) {
-  S.authMode = m; const l = m === 'login';
-  $('authTitle').textContent = l ? 'Welcome back' : 'Create account';
-  $('authSub').textContent = l ? 'Sign in to continue your private chat.' : 'Set up your account, then pair with your partner.';
-  $('authBtnText').textContent = l ? 'Sign in' : 'Create account';
-  $('authToggleText').textContent = l ? "Don't have an account?" : 'Already have an account?';
-  $('authToggleLink').textContent = l ? 'Create one' : 'Sign in';
-  $('nameGroup').classList.toggle('hidden', l); $('authPass').autocomplete = l ? 'current-password' : 'new-password'; $('authErr').classList.remove('show');
-}
-const authErr = (m) => { $('authErr').textContent = m; $('authErr').classList.add('show'); };
-async function onAuthSubmit(e) {
-  e.preventDefault(); $('authErr').classList.remove('show');
-  const email = $('authEmail').value.trim(), pass = $('authPass').value.trim(), name = $('authName').value.trim();
-  if (!email || !pass) return authErr('Please enter email and password.');
-  if (S.authMode === 'register' && !name) return authErr('Please enter your name.');
-  if (pass.length < 6) return authErr('Password must be at least 6 characters.');
-  const { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword } = F();
-  setBusy($('authBtn'), true);
-  try {
-    S.freshLogin = true;
-    if (S.authMode === 'register') { S.registering = true; const c = await createUserWithEmailAndPassword(auth, email, pass); await enterOnce(c.user, name); }
-    else { const c = await signInWithEmailAndPassword(auth, email, pass); await enterOnce(c.user); }
-    window.dispatchEvent(new Event('insha-signed-in'));
-  } catch (err) {
-    const c = err.code;
-    authErr(c === 'auth/email-already-in-use' ? 'Email already registered. Try signing in.' : ['auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found'].includes(c) ? 'Invalid email or password.' : c === 'auth/weak-password' ? 'Password too weak (min 6 characters).' : c === 'auth/network-request-failed' ? 'Network error. Check your connection.' : err.message || 'Authentication failed.');
-  } finally { S.registering = false; S.freshLogin = false; setBusy($('authBtn'), false); }
-}
+  function fbFail(e, title) {
+    if (e && (e.code === 'permission-denied' || /permission/i.test(e.message || ''))) {
+      confirmBox(
+        'Firestore rules need updating',
+        'Firebase blocked this action. Open Firebase Console > Firestore Database > Rules, paste the contents of the firestore.rules file that came with this app, then press Publish and try again.',
+        'Got it'
+      );
+    } else {
+      banner(title, (e && e.message) || 'Something went wrong.');
+    }
+  }
 
-/* ---------- pull to refresh / keyboard ---------- */
-function bindPullToRefresh() {
-  const el = $('ptr'), txt = $('ptrText'), TH = 70, MAX = 110;
-  if (!(('ontouchstart' in window) || navigator.maxTouchPoints > 0)) return;
-  let st = { y: 0, pulling: false, active: false, trig: false };
-  const atTop = (e) => { let n = e.target; while (n && n !== document.body) { if (n.scrollHeight > n.clientHeight + 2) { const o = getComputedStyle(n).overflowY; if (o === 'auto' || o === 'scroll') return n.scrollTop <= 0; } n = n.parentElement; } return true; };
-  const reset = () => { st = { y: 0, pulling: false, active: false, trig: false }; el.classList.remove('active', 'visible', 'refreshing'); el.style.height = '0px'; txt.textContent = 'Pull to refresh'; };
-  window.addEventListener('touchstart', (e) => {
-    if (e.touches.length !== 1 || S.locked || document.body.classList.contains('keyboard-open') || (e.target.closest && e.target.closest('.cw,.modal,.pop,.lock')) || !atTop(e)) return;
-    st = { y: e.touches[0].clientY, pulling: true, active: false, trig: false };
-  }, { passive: true });
-  window.addEventListener('touchmove', (e) => {
-    if (!st.pulling || e.touches.length !== 1) return;
-    const dy = e.touches[0].clientY - st.y;
-    if (dy <= 0) { if (st.active) { el.style.height = '0px'; el.classList.remove('visible'); } return; }
-    if (!atTop(e)) return reset();
-    const d = Math.min(MAX, dy * .55); st.active = true; el.classList.add('active'); el.style.height = d + 'px';
-    if (d > 12) el.classList.add('visible');
-    st.trig = d >= TH; txt.textContent = st.trig ? 'Release to refresh' : 'Pull to refresh';
-    if (e.cancelable && d > 8) e.preventDefault();
-  }, { passive: false });
-  const end = () => {
-    if (!st.pulling) return;
-    if (st.active && st.trig) { el.classList.remove('active'); el.style.height = '0px'; el.classList.add('refreshing'); txt.textContent = 'Refreshing…'; setTimeout(() => location.reload(), 420); } else reset();
+  /* ============================================================
+   *  PREFERENCES
+   * ============================================================ */
+  const PREF_KEYS = ['quick', 'soundOn', 'deskOn'];
+  const prefKey = () => 'insha_chat_prefs_' + (F().auth.currentUser?.uid || 'anon');
+
+  function loadPrefs(profile) {
+    let local = null;
+    try { local = JSON.parse(localStorage.getItem(prefKey()) || 'null'); }
+    catch (e) { local = null; }
+    const cloud = profile?.chatPrefs || null;
+    const best = local && cloud
+      ? ((local.savedAt || 0) >= (cloud.savedAt || 0) ? local : cloud)
+      : (local || cloud);
+    if (!best || typeof best !== 'object') return;
+    PREF_KEYS.forEach((k) => { if (best[k] != null) S[k] = best[k]; });
+    if (!Array.isArray(S.quick)) S.quick = [...DEFAULT_QR];
+    S.aliases = (best.aliases && typeof best.aliases === 'object') ? { ...best.aliases } : {};
+    const first = (profile.partners || [])[0];
+    if (best.partnerAlias && first && !S.aliases[first]) S.aliases[first] = best.partnerAlias;
+    if (Array.isArray(best.hiddenMsgIds)) S.hidden = new Set(best.hiddenMsgIds);
+  }
+
+  let pT = 0;
+  function savePrefs() {
+    const p = {
+      savedAt: Date.now(),
+      aliases: S.aliases,
+      hiddenMsgIds: [...S.hidden].slice(-2000)
+    };
+    PREF_KEYS.forEach((k) => { p[k] = S[k]; });
+    try { localStorage.setItem(prefKey(), JSON.stringify(p)); }
+    catch (e) { /* storage full or private mode */ }
+    clearTimeout(pT);
+    pT = setTimeout(async () => {
+      try {
+        const { doc, updateDoc, db, auth } = F();
+        if (!auth.currentUser) return;
+        await updateDoc(doc(db, 'users', auth.currentUser.uid), { chatPrefs: p });
+      } catch (e) { console.warn('[prefs]', e.message); }
+    }, 600);
+  }
+
+  const seenKey = (u) => 'insha_chat_seen_' + u;
+  const loadSeen = (u) => {
+    try { return new Set(JSON.parse(localStorage.getItem(seenKey(u)) || '[]')); }
+    catch (e) { return new Set(); }
   };
-  window.addEventListener('touchend', end, { passive: true }); window.addEventListener('touchcancel', end, { passive: true });
-}
-function setupKeyboard() {
-  const root = document.documentElement, vv = window.visualViewport; let baseH = innerHeight, lastW = innerWidth;
-  const apply = () => {
-    const h = vv ? vv.height : innerHeight, top = vv ? vv.offsetTop : 0;
-    if (innerWidth !== lastW) { lastW = innerWidth; baseH = innerHeight; }
-    baseH = Math.max(baseH, innerHeight, h); const open = baseH - h > 150;
-    root.style.setProperty('--app-h', Math.round(h) + 'px'); root.style.setProperty('--app-top', Math.round(top) + 'px');
-    document.body.classList.toggle('keyboard-open', open); if (open) scrollToBottom(true);
+  const saveSeen = (u, s) => {
+    try { localStorage.setItem(seenKey(u), JSON.stringify([...s].slice(-400))); }
+    catch (e) { /* ignore */ }
   };
-  if (vv) { vv.addEventListener('resize', apply); vv.addEventListener('scroll', apply); }
-  window.addEventListener('resize', apply);
-  window.addEventListener('orientationchange', () => setTimeout(() => { apply(); scrollToBottom(true); }, 300));
-  $('msgInput').addEventListener('focus', () => setTimeout(() => { apply(); scrollToBottom(true); }, 250));
-  apply();
-}
 
-/* ---------- popovers ---------- */
-const closePops = () => { $('quickPop').classList.remove('show'); $('plusBtn').classList.remove('rot'); };
-function togglePop() {
-  const el = $('quickPop'), open = !el.classList.contains('show'); closePops();
-  if (open) { el.classList.add('show'); $('plusBtn').classList.add('rot'); R.quick(); if (!mobile()) setTimeout(() => $('qpInput').focus(), 60); }
-}
-function addQuick(inp) { const v = inp.value.trim(); if (!v) return; S.quick.push(v.slice(0, 60)); inp.value = ''; savePrefs(); sched('side', 'composer'); }
+  /* ============================================================
+   *  PASSCODE
+   * ============================================================ */
+  const PIN_KEY = 'insha_pin';
+  const BIO_KEY = 'insha_bio';
+  const AL_KEY = 'insha_autolock';
 
-/* ---------- event wiring ---------- */
-function bind() {
-  const click = (id, fn) => { $(id).onclick = fn; }, enter = (id, fn) => $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); fn(); } });
-  $('authForm').addEventListener('submit', onAuthSubmit);
-  click('authToggle', () => setAuthMode(S.authMode === 'login' ? 'register' : 'login'));
+  function loadLockPrefs() {
+    S.pin = localStorage.getItem(PIN_KEY) || null;
+    S.bioEnabled = localStorage.getItem(BIO_KEY) === '1';
+    S.autoLock = localStorage.getItem(AL_KEY) !== '0';
+    $('bioToggle').checked = S.bioEnabled;
+    $('autoLockToggle').checked = S.autoLock;
+    $('passToggle').checked = !!S.pin;
+    $('lockStatus').textContent = S.pin ? 'On' : 'Off';
+    $('changePass').classList.toggle('hidden', !S.pin);
+  }
 
-  /* pairing */
-  click('pairCopy', () => copy(S.profile?.partnerCode || '')); click('copyCode', () => copy(S.profile?.partnerCode || '')); click('reconCopy', () => copy(S.profile?.partnerCode || ''));
-  click('pairBtn', () => doPair($('pairInput'), $('pairBtn'))); click('sidePairBtn', () => doPair($('sidePair'), $('sidePairBtn')));
-  click('reconBtn', () => doPair($('reconInput'), $('reconBtn'))); click('qrPairBtn', () => doPair($('qrPairInput'), $('qrPairBtn')));
-  enter('pairInput', () => $('pairBtn').click()); enter('sidePair', () => $('sidePairBtn').click()); enter('reconInput', () => $('reconBtn').click()); enter('qrPairInput', () => $('qrPairBtn').click());
-  click('pairQr', openQR); click('sideQr', openQR); click('qrBtn', openQR); click('listAdd', openQR); click('rPartner', openQR);
-  click('qrClose', () => { stopScan(); closeM('qrModal'); }); click('scanBtn', toggleScan); click('qrCopy', () => copy(S.profile?.partnerCode || ''));
-  click('qrShare', async () => { const u = pairUrl(); try { if (navigator.share) await navigator.share({ title: 'Connect on INSHA', text: 'Connect with me on INSHA', url: u }); else { await navigator.clipboard.writeText(u); banner('Link copied', 'Send it to your partner.'); } } catch (e) {} });
-  $('qrModal').addEventListener('click', (e) => { if (e.target === $('qrModal')) stopScan(); });
-  click('pairSkip', () => { safeShow('appScreen'); sched('chat'); }); click('pairLogout', logout); click('logout', async () => { if (await confirmBox('Log out', 'Sign out of INSHA on this device?', 'Log out')) logout(); });
-  click('reconLater', () => closeM('reconModal'));
-  click('reqAccept', async () => { const r = S.reqIn; if (!r) return closeM('reqModal'); setBusy($('reqAccept'), true); try { await acceptRequest(r); closeM('reqModal'); } catch (e) { fbFail(e, 'Could not connect'); } finally { setBusy($('reqAccept'), false); } });
-  click('reqDecline', async () => { const r = S.reqIn; closeM('reqModal'); if (r) await declineRequest(r); });
-  click('disconnect', async () => {
-    if (!S.active) return banner('No partner', 'Nothing to disconnect.');
-    if (!(await confirmBox('Disconnect ' + pname(), 'This closes your private chat with this person. Past messages stay stored but are hidden until you pair again.', 'Disconnect'))) return;
-    try { await unpair(S.active); banner('Disconnected', 'Partner removed.'); } catch (e) { banner('Failed', e.message); }
-  });
-  $('peerList').addEventListener('click', async (e) => {
-    const b = e.target.closest('[data-unlink]'); if (!b) return; const id = b.dataset.unlink;
-    if (await confirmBox('Disconnect ' + pname(id), 'This closes your private chat with this person. Past messages stay stored but are hidden until you pair again.', 'Disconnect')) { try { await unpair(id); } catch (er) { banner('Failed', er.message); } }
-  });
+  const bioOK = () =>
+    !!(window.PublicKeyCredential && navigator.credentials && window.isSecureContext);
 
-  /* nav */
-  click('menuBtn', toggleSide); click('sideClose', () => openSide(false)); click('scrim', () => openSide(false));
-  click('rChats', () => { if (mobile()) openSide(false); else expandSide(); });
-  click('rSettings', openSettings); click('pairSettingsBtn', openSettings); click('closeSettings', () => closeM('settingsModal'));
-  click('rProfile', openMyProfile); click('pairProfileBtn', openMyProfile);
-  $('convoBox').addEventListener('click', (e) => { const b = e.target.closest('[data-peer]'); if (b) setActive(b.dataset.peer); });
-  $('banner').addEventListener('click', () => { $('banner').classList.remove('show'); if (S.bannerPeer) setActive(S.bannerPeer); });
+  async function tryBio() {
+    if (!S.bioEnabled || !S.pin || !bioOK()) return false;
+    try {
+      const ch = new Uint8Array(32);
+      crypto.getRandomValues(ch);
+      return !!(await navigator.credentials.create({
+        publicKey: {
+          challenge: ch,
+          rp: { name: 'INSHA' },
+          user: { id: new Uint8Array(16), name: 'insha-user', displayName: 'INSHA User' },
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+          authenticatorSelection: { userVerification: 'required', authenticatorAttachment: 'platform' },
+          timeout: 30000
+        }
+      }));
+    } catch (e) { return false; }
+  }
 
-  /* composer */
-  const ta = $('msgInput'), touch = window.matchMedia('(pointer: coarse)'); let shiftHeld = false;
-  const submitNow = () => $('composer').requestSubmit();
-  ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 100) + 'px'; });
-  ta.addEventListener('keydown', (e) => { shiftHeld = e.shiftKey; if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); submitNow(); } });
-  ta.addEventListener('keyup', (e) => { shiftHeld = e.shiftKey; });
-  ta.addEventListener('beforeinput', (e) => { if (e.inputType === 'insertLineBreak' && !(shiftHeld && !touch.matches)) { e.preventDefault(); submitNow(); } });
-  $('sendBtn').addEventListener('mousedown', (e) => e.preventDefault());
-  $('composer').addEventListener('submit', (e) => { e.preventDefault(); const v = ta.value; ta.value = ''; ta.style.height = 'auto'; send(v); ta.focus(); closePops(); requestAnimationFrame(() => scrollToBottom(true)); });
-  click('replyCancel', clearReply);
-  $('plusBtn').addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); togglePop(); });
-  $('qpList').addEventListener('click', (e) => { const b = e.target.closest('[data-q]'); if (b) { send(S.quick[Number(b.dataset.q)]); closePops(); } });
-  click('qpAdd', () => addQuick($('qpInput'))); enter('qpInput', () => addQuick($('qpInput')));
-  click('qrAdd', () => addQuick($('qrInput'))); enter('qrInput', () => addQuick($('qrInput')));
-  $('qrList').addEventListener('click', async (e) => {
-    const ed = e.target.closest('[data-edit]'), dl = e.target.closest('[data-del]');
-    if (ed) { const i = Number(ed.dataset.edit), n = prompt('Edit quick reply:', S.quick[i]); if (n && n.trim()) { S.quick[i] = n.trim().slice(0, 60); savePrefs(); sched('side', 'composer'); } }
-    if (dl) { const i = Number(dl.dataset.del); if (await confirmBox('Delete quick reply', `Remove "${S.quick[i]}"?`, 'Delete')) { S.quick.splice(i, 1); savePrefs(); sched('side', 'composer'); } }
-  });
-  document.querySelectorAll('[data-qr]').forEach((b) => { b.onclick = () => S.active ? send(b.dataset.qr) : banner('Not paired', 'Pair with your partner first.'); });
+  function pinPad(el, onD, onDel) {
+    el.innerHTML = '';
+    const mk = (t, cls, fn) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'key' + (cls ? ' ' + cls : '');
+      b.textContent = t;
+      if (fn) b.addEventListener('click', fn);
+      el.appendChild(b);
+    };
+    '123456789'.split('').forEach((k) => mk(k, '', () => onD(k)));
+    mk('', 'g');
+    mk('0', '', () => onD('0'));
+    mk('Del', 'g', onDel);
+  }
 
-  /* global click / key handlers */
-  document.addEventListener('click', (e) => { const t = e.target; if (!t.closest('#ctx') && !t.closest('[data-dots]')) closeCtx(); if (!t.closest('.pop') && !t.closest('#plusBtn')) closePops(); });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { closePops(); closeCtx(); }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b' && !$('appScreen').classList.contains('hidden')) { e.preventDefault(); toggleSide(); }
-  });
-  document.querySelectorAll('.modal').forEach((m) => m.addEventListener('click', (e) => { if (e.target === m && m.id !== 'reqModal') m.id === 'modal' ? closeModal(false) : m.classList.remove('show'); }));
-  click('mNo', () => closeModal(false)); click('mYes', () => closeModal(true));
+  const dots = (el, n, err) =>
+    el.querySelectorAll('.d').forEach((d, i) => {
+      d.classList.toggle('on', i < n);
+      d.classList.toggle('err', !!err && i < n);
+    });
 
-  /* settings: alerts + privacy */
-  $('soundToggle').addEventListener('change', (e) => { S.soundOn = e.target.checked; savePrefs(); if (S.soundOn) chime(); });
-  $('deskToggle').addEventListener('change', async (e) => { if (e.target.checked) { if (!(await askNotifications())) e.target.checked = false; } else { S.deskOn = false; savePrefs(); } });
-  click('notifyBtn', askNotifications);
-  $('passToggle').addEventListener('change', async (e) => {
-    if (e.target.checked) { openSetPass(); return; }
-    if (await confirmBox('Turn off password protection?', 'INSHA will open without a passcode on this device.', 'Turn off')) { localStorage.removeItem(PIN_KEY); localStorage.setItem(BIO_KEY, '0'); banner('Password protection off', 'No passcode is required now.'); }
+  function openLock() {
+    if (!S.pin) return;
+    S.locked = true;
+    S.pinTry = '';
+    dots($('pinDots'), 0);
+    $('bioBtn').classList.toggle('hidden', !(S.bioEnabled && bioOK()));
+    pinPad($('pinPad'), (d) => {
+      if (!S.locked || S.pinTry.length >= 4) return;
+      S.pinTry += d;
+      dots($('pinDots'), S.pinTry.length);
+      if (S.pinTry.length < 4) return;
+      if (S.pinTry === S.pin) {
+        setTimeout(closeLock, 150);
+      } else {
+        dots($('pinDots'), 4, true);
+        setTimeout(() => {
+          S.pinTry = '';
+          dots($('pinDots'), 0);
+        }, 500);
+        banner('Wrong passcode', 'Try again.');
+      }
+    }, () => {
+      S.pinTry = S.pinTry.slice(0, -1);
+      dots($('pinDots'), S.pinTry.length);
+    });
+    $('lockScreen').classList.add('show');
+  }
+
+  function closeLock() {
+    S.locked = false;
+    S.pinTry = '';
+    dots($('pinDots'), 0);
+    $('lockScreen').classList.remove('show');
+  }
+
+  function openSetPass() {
+    const h = $('passModal').querySelector('h3');
+    const p = $('passModal').querySelector('p');
+    let first = '';
+    let cur = '';
+    h.textContent = 'Set passcode';
+    p.textContent = 'Choose a 4-digit passcode to protect INSHA on this device.';
+    dots($('setPinDots'), 0);
+    pinPad($('setPinPad'), (d) => {
+      if (cur.length >= 4) return;
+      cur += d;
+      dots($('setPinDots'), cur.length);
+      if (cur.length < 4) return;
+      if (!first) {
+        first = cur;
+        cur = '';
+        setTimeout(() => {
+          dots($('setPinDots'), 0);
+          h.textContent = 'Confirm passcode';
+          p.textContent = 'Re-enter your 4-digit passcode.';
+        }, 200);
+      } else if (cur === first) {
+        localStorage.setItem(PIN_KEY, first);
+        closeM('passModal');
+        loadLockPrefs();
+        banner('Password protection on', 'INSHA is now protected.');
+      } else {
+        dots($('setPinDots'), 4, true);
+        setTimeout(() => {
+          closeM('passModal');
+          loadLockPrefs();
+          banner('Passcodes did not match', 'Try again.');
+        }, 600);
+      }
+    }, () => {
+      cur = cur.slice(0, -1);
+      dots($('setPinDots'), cur.length);
+    });
+    openM('passModal');
+  }
+
+  /* ============================================================
+   *  NAVIGATION SIDEBAR
+   * ============================================================ */
+  const openSide = (v) => {
+    $('nav').classList.toggle('open', v);
+    $('scrim').classList.toggle('show', v);
+    $('sideClose').style.display = v ? 'grid' : 'none';
+  };
+
+  const expandSide = () => {
+    $('nav').classList.remove('collapsed');
+    localStorage.setItem('insha_side', '1');
+  };
+
+  const toggleSide = () => {
+    if (mobile()) return openSide(!$('nav').classList.contains('open'));
+    const c = $('nav').classList.toggle('collapsed');
+    localStorage.setItem('insha_side', c ? '0' : '1');
+  };
+
+  const openSettings = () => {
     loadLockPrefs();
-  });
-  click('changePass', openSetPass); click('cancelSetPin', () => { closeM('passModal'); loadLockPrefs(); });
-  $('bioToggle').addEventListener('change', async (e) => {
-    if (e.target.checked) {
-      if (!bioOK()) { e.target.checked = false; return banner('Not available', 'This browser does not support biometrics.'); }
-      if (!S.pin) { e.target.checked = false; return banner('Turn on password protection first', 'A passcode is required.'); }
-      S.bioEnabled = true;
-      if (!(await tryBio())) { S.bioEnabled = false; e.target.checked = false; return banner('Setup failed', 'Could not enroll biometrics.'); }
-      localStorage.setItem(BIO_KEY, '1');
-    } else { S.bioEnabled = false; localStorage.setItem(BIO_KEY, '0'); }
-    loadLockPrefs();
-  });
-  $('autoLockToggle').addEventListener('change', (e) => { S.autoLock = e.target.checked; localStorage.setItem(AL_KEY, S.autoLock ? '1' : '0'); });
-  click('bioBtn', async () => { if (await tryBio()) { closeLock(); banner('Unlocked', 'Welcome back.'); } else banner('Biometric failed', 'Try your passcode.'); });
-  click('lockNow', () => S.pin ? openLock() : banner('No passcode', 'Turn on password protection in Settings.')); click('rLock', () => S.pin ? openLock() : openSetPass());
+    sched('side');
+    openM('settingsModal');
+    openSide(false);
+  };
 
-  /* profile */
-  click('cancelMyProfile', () => closeM('myProfileModal'));
-  click('saveMyProfile', async () => {
-    const n = $('myDisplayName').value.trim(); if (!n) return banner('Name required', 'Enter a display name.');
-    const bio = $('myBio').value.slice(0, 240); setBusy($('saveMyProfile'), true);
-    try { const { doc, updateDoc, db, auth } = F(); await updateDoc(doc(db, 'users', auth.currentUser.uid), { displayName: n, bio, avatarUrl: S.tmpAvatar || null }); S.profile = { ...S.profile, displayName: n, bio, avatarUrl: S.tmpAvatar || null }; sched('side'); closeM('myProfileModal'); banner('Profile saved', 'Your partners see the update now.'); }
-    catch (err) { banner('Save failed', err.message); } finally { setBusy($('saveMyProfile'), false); }
-  });
-  $('myAvatarFile').addEventListener('change', async (e) => {
-    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-    if (!f.type.startsWith('image/')) return banner('Not an image', 'Pick a photo.');
-    try { await startCrop(f); } catch (err) { banner('Photo failed', 'Could not read that image.'); }
-  });
-  bindCrop();
+  /* ============================================================
+   *  NOTIFICATIONS (system + FCM push)
+   * ============================================================ */
+  function syncNotify() {
+    const b = $('notifyBtn');
+    const ok = 'Notification' in window;
+    b.style.display = ok ? '' : 'none';
+    if (!ok) return;
+    const perm = Notification.permission;
+    b.classList.toggle('on', perm !== 'default');
+    $('notifyBtnText').textContent = perm === 'granted'
+      ? 'Notifications enabled'
+      : perm === 'denied'
+        ? 'Notifications blocked'
+        : 'Enable Notifications';
+    $('deskToggle').checked = S.deskOn && perm === 'granted';
+  }
 
-  /* partner profile / rename / chat menu */
-  click('peerAv', openPartnerProfile); click('peerWho', openPartnerProfile);
-  click('closePartnerProfile', () => closeM('partnerProfileModal')); click('renamePartnerBtn', () => { closeM('partnerProfileModal'); openRename(); });
-  $('partnerProfileAv').addEventListener('click', (e) => { const img = e.currentTarget.querySelector('img'); if (img && img.src) { $('photoViewImg').src = img.src; $('photoView').classList.add('show'); } });
-  click('closePhotoView', () => $('photoView').classList.remove('show')); $('photoView').addEventListener('click', (e) => { if (e.target === $('photoView')) $('photoView').classList.remove('show'); });
-  click('cancelRename', () => closeM('renameModal'));
-  click('saveRename', () => { const v = $('renameInput').value.trim(); if (!v) return banner('Name required', 'Enter a name.'); S.aliases[S.active] = v; savePrefs(); sched('head', 'list', 'chat', 'side'); closeM('renameModal'); banner('Renamed', 'Partner nickname updated locally.'); });
-  click('cancelForward', () => closeM('forwardModal'));
-  click('chatMenuBtn', () => openM('chatMenuModal')); click('cancelChatMenu', () => closeM('chatMenuModal'));
-  click('menuPartner', () => { closeM('chatMenuModal'); openPartnerProfile(); }); click('menuSearch', () => { closeM('chatMenuModal'); openSearch(); }); click('menuRename', () => { closeM('chatMenuModal'); openRename(); });
-  click('menuTxt', () => exportChat('txt')); click('menuJson', () => exportChat('json'));
-  click('menuClear', async () => {
+  async function notify(title, body, data) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    data = data || {};
+    const o = {
+      body,
+      tag: data.tag || 'insha-' + (data.peer || 'x'),
+      icon: 'icon.svg',
+      badge: 'icon.svg',
+      renotify: true,
+      data
+    };
+    try {
+      if (S.swReg) return await S.swReg.showNotification(title, o);
+      const n = new Notification(title, o);
+      n.onclick = () => {
+        window.focus();
+        openFromNotification(data);
+        n.close();
+      };
+    } catch (e) { /* ignore */ }
+  }
+
+  async function setupPush() {
+    if (!S.swReg || !('Notification' in window) ||
+        Notification.permission !== 'granted' ||
+        VAPID_KEY.startsWith('PASTE') || !S.user) return;
+    try {
+      const { msg, app, db, doc, updateDoc, arrayUnion, auth } = F();
+      if (!(await msg.isSupported())) return;
+      const reg = await navigator.serviceWorker.ready;
+      const token = await msg.getToken(msg.getMessaging(app), {
+        vapidKey: VAPID_KEY,
+        serviceWorkerRegistration: reg
+      });
+      S.fcmToken = token;
+      if (token && !(S.profile?.fcmTokens || []).includes(token)) {
+        await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+          fcmTokens: arrayUnion(token)
+        });
+      }
+    } catch (e) { console.warn('[push]', e.message); }
+  }
+
+  async function askNotifications() {
+    if (!('Notification' in window)) {
+      banner('Not supported', 'This browser does not support notifications.');
+      return false;
+    }
+    let p = Notification.permission;
+    if (p === 'default') p = await Notification.requestPermission();
+    S.deskOn = p === 'granted';
+    savePrefs();
+    syncNotify();
+    if (p !== 'granted') {
+      banner('Notifications blocked', 'Allow notifications in your browser settings to get alerts.');
+      return false;
+    }
+    setupPush();
+    notify('INSHA', 'Notifications are on.', { tag: 'insha-test' });
+    return true;
+  }
+
+  function openFromNotification(d) {
+    ['settingsModal', 'qrModal', 'chatMenuModal', 'forwardModal',
+     'partnerProfileModal', 'renameModal', 'myProfileModal'].forEach(closeM);
+    stopScan();
+    if (d && d.peer && S.peers.has(d.peer)) setActive(d.peer);
+    else if (d && d.peer) S.pendingPeer = d.peer;
+    scrollToBottom(true);
+  }
+
+  function alertIncoming(m) {
+    const hidden = document.hidden;
+    const other = m.peer !== S.active;
+    if (hidden || other) {
+      S.unread[m.peer] = (S.unread[m.peer] || 0) + 1;
+      updateTitle();
+      sched('list');
+    }
+    if (hidden) {
+      notify(pname(m.peer), m.text, { peer: m.peer });
+      vibrate([200, 100, 200]);
+    } else {
+      vibrate([100, 50, 100]);
+    }
+    banner(pname(m.peer), m.text, m.peer);
+    chime();
+  }
+
+  /* ============================================================
+   *  FIREBASE DATA LAYER
+   * ============================================================ */
+  const makeCode = () => {
+    const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let s = 'INSHA-';
+    for (let i = 0; i < 4; i++) s += c[Math.floor(Math.random() * c.length)];
+    return s;
+  };
+
+  async function getProfile(uid) {
+    const { doc, getDoc, db } = F();
+    const s = await getDoc(doc(db, 'users', uid));
+    return s.exists() ? s.data() : null;
+  }
+
+  async function ensureProfile(user, name) {
+    let p = await getProfile(user.uid);
+    if (p) return p;
+    const { doc, setDoc, serverTimestamp, db } = F();
+    p = {
+      displayName: name || (user.email || 'user').split('@')[0],
+      email: user.email,
+      partnerCode: makeCode(),
+      partners: [],
+      partnerId: null,
+      bio: ''
+    };
+    await setDoc(doc(db, 'users', user.uid), { ...p, createdAt: serverTimestamp() });
+    return p;
+  }
+
+  const normProfile = (p) => {
+    p.partners = [...new Set([...(p.partners || []), ...(p.partnerId ? [p.partnerId] : [])])];
+    return p;
+  };
+
+  async function sendRequest(raw) {
+    const { collection, query, where, getDocs, doc, setDoc, db, auth } = F();
+    const me = auth.currentUser.uid;
+    const code = raw.trim().toUpperCase();
+    if (!code.startsWith('INSHA-')) throw new Error('Code must start with INSHA-');
+    const snap = await getDocs(query(collection(db, 'users'), where('partnerCode', '==', code)));
+    if (snap.empty) throw new Error('Invalid partner code');
+    const pid = snap.docs[0].id;
+    const pd = snap.docs[0].data();
+    if (pid === me) throw new Error('You cannot pair with yourself');
+    if (myPeers().includes(pid)) throw new Error('You are already connected to ' + (pd.displayName || 'this person'));
+    await setDoc(doc(db, 'pair_requests', me + '_' + pid), {
+      from: me,
+      to: pid,
+      fromName: S.profile?.displayName || 'Someone',
+      toName: pd.displayName || 'Partner',
+      status: 'pending',
+      createdAt: Date.now()
+    });
+    S.sentName = pd.displayName || 'your partner';
+    sched('pair');
+    return pd;
+  }
+
+  async function acceptRequest(r) {
+    const { doc, updateDoc, arrayUnion, arrayRemove, db, auth } = F();
+    const me = auth.currentUser.uid;
+    const pid = r.from;
+    if (!(await getProfile(pid))) throw new Error('That account no longer exists');
+    await updateDoc(doc(db, 'users', me), { partners: arrayUnion(pid) });
+    try {
+      await updateDoc(doc(db, 'pair_requests', r.id), { status: 'accepted' });
+    } catch (e) {
+      try { await updateDoc(doc(db, 'users', me), { partners: arrayRemove(pid) }); }
+      catch (_) { /* rollback best-effort */ }
+      throw e;
+    }
+  }
+
+  async function declineRequest(r) {
+    const { doc, updateDoc, db } = F();
+    try { await updateDoc(doc(db, 'pair_requests', r.id), { status: 'declined' }); }
+    catch (e) { fbFail(e, 'Decline failed'); }
+  }
+
+  function watchRequests() {
+    const { collection, query, where, onSnapshot, db, auth } = F();
+    const me = auth.currentUser.uid;
+    const q = (f) => query(collection(db, 'pair_requests'), where(f, '==', me));
+    S.reqIn = null;
+    S.reqOut = [];
+    S.unsubs.push(
+      onSnapshot(
+        q('to'),
+        (snap) => {
+          S.reqIn = snap.docs
+            .map((d) => ({ id: d.id, ...d.data() }))
+            .filter((r) => r.status === 'pending')
+            .sort((a, b) => b.createdAt - a.createdAt)[0] || null;
+          handleRequests();
+        },
+        (e) => { console.warn('[requests-in]', e.message); fbFail(e, 'Requests'); }
+      ),
+      onSnapshot(
+        q('from'),
+        (snap) => {
+          S.reqOut = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          handleRequests();
+        },
+        (e) => console.warn('[requests-out]', e.message)
+      )
+    );
+  }
+
+  async function handleRequests() {
+    if (!S.profile || !S.user) return;
+    const { doc, updateDoc, deleteDoc, arrayUnion, db, auth } = F();
+    const me = auth.currentUser.uid;
+
+    const rin = S.reqIn && !myPeers().includes(S.reqIn.from) ? S.reqIn : null;
+    if (rin) {
+      const key = rin.id + ':' + rin.createdAt;
+      if (S.reqShown !== key) {
+        S.reqShown = key;
+        const n = rin.fromName || 'Someone';
+        $('reqText').textContent = `${n} wants to connect with you. Accept to start your private chat.`;
+        ['reconModal', 'qrModal', 'settingsModal'].forEach(closeM);
+        stopScan();
+        openM('reqModal');
+        chime();
+        banner('Connection request', `${n} wants to connect.`);
+        if (document.hidden) notify('Connection request', `${n} wants to connect.`, { tag: 'insha-req', kind: 'request' });
+      }
+    } else {
+      closeM('reqModal');
+    }
+
+    const outs = S.reqOut || [];
+    for (const r of outs) {
+      if (r.status === 'accepted') {
+        if (S.finalizing === r.id) continue;
+        S.finalizing = r.id;
+        try {
+          if (!myPeers().includes(r.to)) {
+            await updateDoc(doc(db, 'users', me), { partners: arrayUnion(r.to) });
+          }
+          await deleteDoc(doc(db, 'pair_requests', r.id));
+        } catch (e) {
+          fbFail(e, 'Could not connect');
+        } finally {
+          S.finalizing = null;
+        }
+      } else if (r.status === 'declined') {
+        if (S.declSeen !== r.id + r.createdAt) {
+          S.declSeen = r.id + r.createdAt;
+          S.sentName = null;
+          sched('pair');
+          banner('Request declined', `${r.toName || 'They'} declined your request.`);
+        }
+        deleteDoc(doc(db, 'pair_requests', r.id)).catch(() => { /* best-effort */ });
+      } else if (r.status === 'pending') {
+        S.sentName = r.toName || 'your partner';
+        sched('pair');
+      }
+    }
+    if (S.sentName && !outs.some((r) => r.status === 'pending')) {
+      S.sentName = null;
+      sched('pair');
+    }
+  }
+
+  async function unpair(pid) {
+    const { doc, updateDoc, arrayRemove, db, auth } = F();
+    await updateDoc(doc(db, 'users', auth.currentUser.uid), { partners: arrayRemove(pid) });
+    if (S.active === pid) clearActivePeer();
+  }
+
+  async function setPresence(on) {
+    if (!S.user) return;
+    try {
+      const { doc, updateDoc, db, auth } = F();
+      await updateDoc(doc(db, 'users', auth.currentUser.uid), { online: on, lastSeen: Date.now() });
+    } catch (e) { /* presence is best-effort */ }
+  }
+
+  const beat = () => { if (!document.hidden) setPresence(true); };
+
+  function syncPeers(ids) {
+    const { doc, onSnapshot, updateDoc, arrayRemove, db, auth } = F();
+    const me = auth.currentUser.uid;
+
+    for (const [id, u] of S.peerSubs) {
+      if (!ids.includes(id)) {
+        u();
+        S.peerSubs.delete(id);
+        S.peers.delete(id);
+        S.linked.delete(id);
+      }
+    }
+
+    ids.forEach((id) => {
+      if (S.peerSubs.has(id)) return;
+      S.peers.set(id, { uid: id });
+      S.peerSubs.set(id, onSnapshot(
+        doc(db, 'users', id),
+        (ps) => {
+          if (!ps.exists()) return;
+          const pd = ps.data();
+          S.peers.set(id, { uid: id, ...pd });
+          if (linkedTo(pd, me)) {
+            S.linked.add(id);
+          } else if (S.linked.delete(id) && myPeers().includes(id)) {
+            updateDoc(doc(db, 'users', me), { partners: arrayRemove(id) }).catch(() => { /* ignore */ });
+            if (S.active === id) clearActivePeer();
+          }
+          sched('head', 'list', 'pair', 'side');
+        },
+        () => { /* peer disappeared; handled above */ }
+      ));
+    });
+
+    /* Restore previously-selected partner on reload.
+     * Without this, S.active resets to ids[0] (Partner A) every cold start. */
+    if (!ids.includes(S.active)) {
+      const saved = readActivePeer();
+      S.active = (saved && ids.includes(saved)) ? saved : (ids[0] || null);
+      if (S.active) saveActivePeer(S.active);
+    }
+  }
+
+  function watchProfile() {
+    const { doc, onSnapshot, updateDoc, db, auth } = F();
+    S.unsubs.push(onSnapshot(
+      doc(db, 'users', auth.currentUser.uid),
+      (snap) => {
+        if (!snap.exists()) return;
+        const pr = normProfile(snap.data());
+        const ids = pr.partners;
+        const n = ids.length;
+        S.profile = pr;
+
+        if (snap.data().partnerId) {
+          updateDoc(snap.ref, { partners: ids, partnerId: null }).catch(() => { /* ignore */ });
+        }
+
+        syncPeers(ids);
+
+        if (n !== S.prevCount) {
+          const prev = S.prevCount;
+          S.prevCount = n;
+          if (n && !prev) {
+            closeM('reconModal');
+            closeM('reqModal');
+            S.sentName = null;
+            safeShow('appScreen');
+            banner('Connected', 'You are now connected. Say hello.');
+          } else if (n > prev) {
+            banner('Connected', 'New partner added.');
+          } else if (n < prev) {
+            banner('Disconnected', 'A partner link was closed.');
+            if (!n) {
+              safeShow('pairScreen');
+              $('reconCode').textContent = pr.partnerCode || '-';
+              openM('reconModal');
+            }
+          }
+        }
+
+        handleRequests();
+        sched('side', 'head', 'pair', 'list', 'chat', 'composer');
+        if (S.pendingPeer || S.pendingPair) applyPending();
+      }
+    ));
+  }
+
+  function applyPending() {
+    if (S.pendingPeer && S.peers.has(S.pendingPeer)) {
+      setActive(S.pendingPeer);
+      S.pendingPeer = null;
+    }
+    if (S.pendingPair) {
+      const c = S.pendingPair;
+      S.pendingPair = null;
+      if (c !== S.profile.partnerCode) {
+        confirmBox('Connect with this code?', `Send a connection request using ${c}?`, 'Send request')
+          .then((ok) => ok && pairWith(c));
+      }
+    }
+  }
+
+  /* ============================================================
+   *  MESSAGES
+   * ============================================================ */
+  function toMsg(d, dir) {
+    const x = d.data();
+    return {
+      id: d.id,
+      text: x.text || '',
+      dir,
+      peer: dir === 'in' ? x.senderId : x.receiverId,
+      ts: x.timestamp?.toMillis ? x.timestamp.toMillis() : Date.now(),
+      edited: !!x.edited,
+      replyTo: x.replyTo || null,
+      forwarded: !!x.forwarded
+    };
+  }
+
+  function startChat() {
+    const { collection, query, where, onSnapshot, db, auth } = F();
+    const me = auth.currentUser.uid;
+    const seen = loadSeen(me);
+    let firstIn = true;
+
+    S.unsubs.push(
+      onSnapshot(
+        query(collection(db, 'messages'), where('receiverId', '==', me)),
+        (snap) => {
+          const initial = firstIn;
+          firstIn = false;
+          let anyNew = false;
+          let seenDirty = false;
+
+          snap.docChanges().forEach((ch) => {
+            if (ch.type === 'removed') { S.msgs.delete(ch.doc.id); return; }
+            const m = toMsg(ch.doc, 'in');
+            S.msgs.set(m.id, m);
+            if (ch.type !== 'added') return;
+            anyNew = true;
+            const silent = initial || seen.has(m.id) || Date.now() - m.ts > STALE_MS || !S.peers.has(m.peer);
+            if (!seen.has(m.id)) { seen.add(m.id); seenDirty = true; }
+            if (!silent) alertIncoming(m);
+          });
+
+          if (seenDirty) saveSeen(me, seen);
+          S.loaded.in = true;
+          settle();
+          if (anyNew) scrollToBottom(true);
+        },
+        (e) => { console.error(e); fbFail(e, 'Sync error'); }
+      ),
+      onSnapshot(
+        query(collection(db, 'messages'), where('senderId', '==', me)),
+        (snap) => {
+          let anyNew = false;
+          snap.docChanges().forEach((ch) => {
+            if (ch.type === 'removed') { S.msgs.delete(ch.doc.id); return; }
+            S.msgs.set(ch.doc.id, toMsg(ch.doc, 'out'));
+            anyNew = true;
+          });
+          S.loaded.out = true;
+          settle();
+          if (anyNew) scrollToBottom(true);
+        },
+        (e) => console.error(e)
+      )
+    );
+  }
+
+  function settle() {
+    sched('chat', 'list');
+    if (S.loaded.in && S.loaded.out) S.ready = true;
+  }
+
+  function setActive(pid) {
+    if (!S.peers.has(pid)) return;
+    S.active = pid;
+    saveActivePeer(pid);
+    S.limit = PAGE;
+    S.drawn = new Set();
+    S.unread[pid] = 0;
+    S.q = '';
+    $('searchInput').value = '';
+    $('searchCount').textContent = '';
+    $('searchBar').classList.remove('show');
+    clearReply();
+    updateTitle();
+    sched('head', 'list', 'chat', 'composer', 'side');
+    scrollToBottom(true);
+    if (mobile()) openSide(false);
+  }
+
+  async function send(raw) {
+    const text = (raw || '').trim();
+    if (!text) return;
+    const pid = S.active;
+    if (!pid) return banner('Not paired', 'Pair with your partner first.');
+    const { collection, addDoc, doc, updateDoc, serverTimestamp, db, auth } = F();
+    try {
+      if (S.editing) {
+        await updateDoc(doc(db, 'messages', S.editing), {
+          text: text.slice(0, 2000),
+          edited: true,
+          editedAt: serverTimestamp()
+        });
+        clearReply();
+        scrollToBottom(true);
+        return;
+      }
+      const payload = {
+        senderId: auth.currentUser.uid,
+        receiverId: pid,
+        text: text.slice(0, 2000),
+        type: 'normal',
+        status: 'sent',
+        timestamp: serverTimestamp()
+      };
+      if (S.replyTo) {
+        payload.replyTo = {
+          id: S.replyTo.id,
+          text: S.replyTo.text.slice(0, 120),
+          name: S.replyTo.dir === 'out' ? 'You' : pname(S.replyTo.peer)
+        };
+      }
+      clearReply();
+      await addDoc(collection(db, 'messages'), payload);
+      scrollToBottom(true);
+    } catch (e) {
+      banner('Send failed', e.message);
+    }
+  }
+
+  /* ============================================================
+   *  RENDERERS
+   * ============================================================ */
+  function dayLabel(ts) {
+    const d = new Date(ts);
+    const n = new Date();
+    const y = new Date();
+    y.setDate(n.getDate() - 1);
+    const same = (a, b) => a.toDateString() === b.toDateString();
+    return same(d, n) ? 'Today'
+      : same(d, y) ? 'Yesterday'
+      : d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function hl(text, q) {
+    if (!q) return esc(text);
+    const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    return text.split(re).map((p, i) => i % 2 ? '<mark>' + esc(p) + '</mark>' : esc(p)).join('');
+  }
+
+  const visible = (peer = S.active) => {
+    const a = [];
+    S.msgs.forEach((m) => {
+      if (m.peer === peer && !S.hidden.has(m.id)) a.push(m);
+    });
+    return a.sort((x, y) => x.ts - y.ts);
+  };
+
+  R.chat = () => {
+    const box = $('msgs');
+    const near = box.scrollHeight - box.scrollTop - box.clientHeight < 160;
+
+    if (!S.peers.size) {
+      box.innerHTML = `<div class="state">${I('lock')}<h4>Not paired yet</h4><span>Scan a QR code or enter your partner's code to open your private chat.</span><button class="sbtn" id="pairNow" style="padding:0 20px">Pair now</button></div>`;
+      $('pairNow').onclick = openQR;
+      return;
+    }
+
+    if (!(S.loaded.in && S.loaded.out)) {
+      box.innerHTML = '<div class="sk"></div><div class="sk r"></div><div class="sk"></div>';
+      return;
+    }
+
+    let list = visible();
+    const q = S.q;
+    if (q) {
+      const lq = q.toLowerCase();
+      list = list.filter((m) => m.text.toLowerCase().includes(lq));
+    }
+
+    if (!list.length) {
+      box.innerHTML = q
+        ? `<div class="state">${I('search')}<h4>No matches</h4><span>No messages found for "${esc(q)}".</span></div>`
+        : `<div class="state">${I('message-circle')}<h4>Say hello</h4><span>This conversation is just between you and ${esc(pname())}.</span></div>`;
+      return;
+    }
+
+    const cut = !q && list.length > S.limit;
+    if (cut) list = list.slice(-S.limit);
+
+    let html = cut ? '<button class="more" data-more>Show earlier messages</button>' : '';
+    let last = '';
+    let prev = null;
+
+    for (const m of list) {
+      const day = dayLabel(m.ts);
+      if (day !== last) {
+        html += `<div class="day"><span>${day}</span></div>`;
+        last = day;
+        prev = null;
+      }
+      const grouped = prev && prev.dir === m.dir && m.ts - prev.ts < 120000;
+      const anim = S.ready && !S.drawn.has(m.id) ? ' anim' : '';
+      const rp = m.replyTo
+        ? `<div class="rp"><b>${esc(m.replyTo.name || '')}</b><span>${esc((m.replyTo.text || '').slice(0, 80))}</span></div>`
+        : '';
+      const fw = m.forwarded ? `<div class="fw">${I('forward', 's')}Forwarded</div>` : '';
+      const meta = `<span class="meta">${m.edited ? '<em>edited</em>' : ''}${fmtTime(m.ts)}<button class="db" data-dots="${m.id}" aria-label="Message options">${I('chevron-down')}</button></span>`;
+      html += `<div class="row ${m.dir}${grouped ? ' grouped' : ''}${anim}" data-msg="${m.id}"><div class="wrap"><div class="bub">${rp}${fw}${hl(m.text, q)}${meta}</div></div></div>`;
+      S.drawn.add(m.id);
+      prev = m;
+    }
+
+    box.innerHTML = html;
+    if (near || !S.ready) scrollToBottom(true);
+  };
+
+  R.composer = () => {
+    const on = S.peers.size > 0;
+    $('msgInput').disabled = !on;
+    $('sendBtn').disabled = !on;
+    $('msgInput').placeholder = on
+      ? (S.editing ? 'Edit message…' : 'Write a message')
+      : 'Pair to start chatting';
+    R.quick();
+  };
+
+  R.quick = () => {
+    $('qpList').innerHTML = !S.peers.size
+      ? '<div class="qe">Pair with your partner to send quick messages.</div>'
+      : !S.quick.length
+        ? '<div class="qe">No quick replies yet. Add one below.</div>'
+        : S.quick.map((q, i) =>
+            `<button class="qi" type="button" data-q="${i}">${I('message-square', 's')}<span>${esc(q)}</span></button>`
+          ).join('');
+  };
+
+  R.head = () => {
+    const p = S.peers.get(S.active);
+    const n = p ? pname() : 'No partner yet';
+    const on = isOnline(p);
+    $('peerName').textContent = n;
+    setAvatar($('peerAv'), n, p?.avatarUrl);
+    $('peerSub').className = 'sub' + (p && on ? ' on' : '');
+    $('peerSub').innerHTML = `<i class="dt"></i><span>${p ? (on ? 'Online' : lastSeenText(p)) : 'Pair to start chatting'}</span>`;
+    $('rDot').className = 'sd' + (p && on ? ' on' : '');
+  };
+
+  R.list = () => {
+    const box = $('convoBox');
+    if (!S.peers.size) {
+      box.innerHTML = `<div class="state" style="padding:20px 8px">${I('users')}<h4>No conversation yet</h4><span>Tap + to pair with your partner.</span></div>`;
+      return;
+    }
+    const last = {};
+    S.msgs.forEach((m) => {
+      if (!S.hidden.has(m.id) && (!last[m.peer] || last[m.peer].ts < m.ts)) last[m.peer] = m;
+    });
+    box.innerHTML = [...S.peers.values()].map((p) => {
+      const lm = last[p.uid];
+      const on = isOnline(p);
+      const u = S.unread[p.uid] || 0;
+      const n = pname(p.uid);
+      return `<button class="convo${p.uid === S.active ? ' sel' : ''}" data-peer="${p.uid}"><div class="avatar av-m">${avHTML(n, p.avatarUrl)}</div><div class="mid"><b><span>${esc(n)}</span><em>${lm ? fmtTime(lm.ts) : ''}</em></b><div class="pv">${lm ? (lm.dir === 'out' ? 'You: ' : '') + esc(lm.text) : 'Say hello'}</div><span class="badge${on ? ' on' : ''}"><i></i>${on ? 'Online' : 'Offline'}</span>${u ? ` <span class="cnt">${u}</span>` : ''}</div></button>`;
+    }).join('');
+  };
+
+  R.side = () => {
+    const pr = S.profile || {};
+    setAvatar($('meAv'), pr.displayName || 'User', pr.avatarUrl);
+    $('meCode').textContent = pr.partnerCode || '-';
+    $('qrList').innerHTML = S.quick.length
+      ? S.quick.map((q, i) =>
+          `<div class="qr"><span>${esc(q)}</span><button class="ib" data-edit="${i}" aria-label="Edit">${I('pencil', 's')}</button><button class="ib d" data-del="${i}" aria-label="Delete">${I('trash-2', 's')}</button></div>`
+        ).join('')
+      : '<div style="font-size:13px;color:var(--mute);padding:6px 0">No quick replies yet.</div>';
+    $('peerList').innerHTML = S.peers.size
+      ? [...S.peers.values()].map((p) =>
+          `<div class="qr"><div class="avatar">${avHTML(pname(p.uid), p.avatarUrl)}</div><span>${esc(pname(p.uid))}</span><button class="ib d" data-unlink="${p.uid}" aria-label="Disconnect" title="Disconnect">${I('x', 's')}</button></div>`
+        ).join('')
+      : '<div style="font-size:13px;color:var(--mute);padding:8px 0">Nobody connected yet.</div>';
+    $('soundToggle').checked = S.soundOn;
+    $('disconnect').style.display = S.active ? '' : 'none';
+    syncNotify();
+  };
+
+  R.pair = () => {
+    $('pairMyCode').textContent = S.profile?.partnerCode || 'INSHA-0000';
+    const w = $('pairWait');
+    const n = S.peers.size;
+    w.classList.toggle('ok', n > 0);
+    w.lastElementChild.textContent = n
+      ? `Connected to ${[...S.peers.keys()].map((u) => pname(u)).join(', ')}`
+      : (S.sentName ? `Request sent. Waiting for ${S.sentName} to accept...` : 'Waiting for partner...');
+  };
+
+  /* ============================================================
+   *  MY PROFILE + CROP
+   * ============================================================ */
+  function openMyProfile() {
+    if (!S.profile) return;
+    $('myDisplayName').value = S.profile.displayName || '';
+    $('myBio').value = S.profile.bio || '';
+    S.tmpAvatar = safeImg(S.profile.avatarUrl);
+    setAvatar($('myAvatarPreview'), S.profile.displayName || '?', S.tmpAvatar);
+    openM('myProfileModal');
+    openSide(false);
+  }
+
+  function startCrop(file) {
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onerror = rej;
+      r.onload = () => {
+        const im = new Image();
+        im.onerror = rej;
+        im.onload = () => {
+          S.cropImg = im;
+          S.cropState = { scale: 1, offsetX: 0, offsetY: 0, minScale: 1 };
+          openM('cropModal');
+          $('cropZoom').value = 1;
+          requestAnimationFrame(resizeCrop);
+          res();
+        };
+        im.src = r.result;
+      };
+      r.readAsDataURL(file);
+    });
+  }
+
+  function resizeCrop() {
+    const cv = $('cropCanvas');
+    const wrap = cv.parentElement;
+    const size = Math.min(wrap.clientWidth, wrap.clientHeight, 360) || 300;
+    cv.width = cv.height = size;
+    cv.style.width = cv.style.height = size + 'px';
+    if (S.cropImg && S.cropState) {
+      const m = Math.max(size / S.cropImg.width, size / S.cropImg.height);
+      S.cropState.minScale = m;
+      S.cropState.scale = Math.max(S.cropState.scale, m);
+      clampCrop();
+    }
+    drawCrop();
+  }
+
+  function clampCrop() {
+    if (!S.cropImg || !S.cropState) return;
+    const sz = $('cropCanvas').width;
+    const sc = S.cropState.scale;
+    const mx = Math.max(0, (S.cropImg.width * sc - sz) / 2);
+    const my = Math.max(0, (S.cropImg.height * sc - sz) / 2);
+    S.cropState.offsetX = Math.max(-mx, Math.min(mx, S.cropState.offsetX));
+    S.cropState.offsetY = Math.max(-my, Math.min(my, S.cropState.offsetY));
+  }
+
+  function drawCrop() {
+    const cv = $('cropCanvas');
+    const ctx = cv.getContext('2d');
+    const sz = cv.width;
+    ctx.clearRect(0, 0, sz, sz);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, sz, sz);
+    if (!S.cropImg || !S.cropState) return;
+    const sc = S.cropState.scale;
+    const w = S.cropImg.width * sc;
+    const h = S.cropImg.height * sc;
+    ctx.drawImage(S.cropImg, (sz - w) / 2 + S.cropState.offsetX, (sz - h) / 2 + S.cropState.offsetY, w, h);
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.beginPath();
+    ctx.arc(sz / 2, sz / 2, sz / 2 - 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function bindCrop() {
+    const cv = $('cropCanvas');
+    let drag = null;
+    let pinch = null;
+
+    cv.addEventListener('pointerdown', (e) => {
+      if (!S.cropImg || !S.cropState) return;
+      drag = { x: e.clientX, y: e.clientY, ox: S.cropState.offsetX, oy: S.cropState.offsetY };
+      try { cv.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+    });
+    cv.addEventListener('pointermove', (e) => {
+      if (!drag || !S.cropState) return;
+      S.cropState.offsetX = drag.ox + e.clientX - drag.x;
+      S.cropState.offsetY = drag.oy + e.clientY - drag.y;
+      clampCrop();
+      drawCrop();
+    });
+    ['pointerup', 'pointercancel'].forEach((ev) => cv.addEventListener(ev, () => { drag = null; }));
+
+    const dist = (t) => Math.hypot(t[1].clientX - t[0].clientX, t[1].clientY - t[0].clientY);
+    cv.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2 && S.cropState) {
+        pinch = { d0: dist(e.touches), s0: S.cropState.scale };
+      }
+    }, { passive: true });
+    cv.addEventListener('touchmove', (e) => {
+      if (!pinch || e.touches.length !== 2 || !S.cropState) return;
+      const m = S.cropState.minScale;
+      S.cropState.scale = Math.max(m, Math.min(m * 3, pinch.s0 * dist(e.touches) / pinch.d0));
+      $('cropZoom').value = S.cropState.scale / m;
+      clampCrop();
+      drawCrop();
+      e.preventDefault();
+    }, { passive: false });
+    cv.addEventListener('touchend', () => { pinch = null; }, { passive: true });
+
+    $('cropZoom').addEventListener('input', (e) => {
+      if (!S.cropState) return;
+      S.cropState.scale = S.cropState.minScale * (parseFloat(e.target.value) || 1);
+      clampCrop();
+      drawCrop();
+    });
+
+    $('cancelCrop').onclick = () => {
+      S.cropImg = null;
+      S.cropState = null;
+      closeM('cropModal');
+    };
+
+    $('applyCrop').onclick = () => {
+      if (!S.cropImg || !S.cropState) return;
+      const sz = cv.width;
+      const k = 512 / sz;
+      const out = document.createElement('canvas');
+      out.width = out.height = 512;
+      const sc = S.cropState.scale * k;
+      const w = S.cropImg.width * sc;
+      const h = S.cropImg.height * sc;
+      out.getContext('2d').drawImage(
+        S.cropImg,
+        (512 - w) / 2 + S.cropState.offsetX * k,
+        (512 - h) / 2 + S.cropState.offsetY * k,
+        w, h
+      );
+      S.tmpAvatar = out.toDataURL('image/jpeg', .85);
+      setAvatar($('myAvatarPreview'), '', S.tmpAvatar);
+      S.cropImg = null;
+      S.cropState = null;
+      closeM('cropModal');
+    };
+
+    window.addEventListener('resize', () => {
+      if (S.cropImg && $('cropModal').classList.contains('show')) resizeCrop();
+    });
+  }
+
+  /* ============================================================
+   *  PARTNER PROFILE / RENAME
+   * ============================================================ */
+  function openPartnerProfile() {
+    const p = S.peers.get(S.active);
+    if (!p) return banner('No partner', 'Pair first.');
+    const orig = S.aliases[S.active] ? (p.displayName || 'Partner') : '';
+    const bio = (p.bio || '').trim();
+    $('partnerProfileName').textContent = pname();
+    $('partnerOrigName').textContent = orig ? `Real name: ${orig}` : '';
+    $('partnerOrigName').classList.toggle('hidden', !orig);
+    $('partnerProfileBio').textContent = bio || 'No bio yet.';
+    $('partnerProfileBio').classList.toggle('empty', !bio);
+    setAvatar($('partnerProfileAv'), pname(), p.avatarUrl);
+    openM('partnerProfileModal');
+  }
+
+  function openRename() {
+    if (!S.active) return banner('No partner', 'Pair first.');
+    $('renameInput').value = pname();
+    openM('renameModal');
+  }
+
+  /* ============================================================
+   *  REPLY / EDIT / CONTEXT MENU
+   * ============================================================ */
+  function setReply(m) {
+    S.editing = null;
+    S.replyTo = m;
+    $('replyBar').classList.add('show');
+    $('replyName').textContent = 'Replying to ' + (m.dir === 'out' ? 'yourself' : pname(m.peer));
+    $('replyText').textContent = m.text.slice(0, 100);
+    $('msgInput').focus();
+  }
+
+  function setEdit(m) {
+    S.replyTo = null;
+    S.editing = m.id;
+    $('replyBar').classList.add('show');
+    $('replyName').textContent = 'Editing message';
+    $('replyText').textContent = m.text.slice(0, 100);
+    $('msgInput').value = m.text;
+    $('msgInput').focus();
+    R.composer();
+  }
+
+  function clearReply() {
+    S.replyTo = null;
+    if (S.editing) {
+      S.editing = null;
+      $('msgInput').value = '';
+      R.composer();
+    }
+    $('replyBar').classList.remove('show');
+  }
+
+  const closeCtx = () => $('ctx').classList.remove('show');
+
+  function openCtx(m, x, y) {
+    const mine = m.dir === 'out';
+    const it = (a, ic, t, c) => `<button class="ci ${c || ''}" data-act="${a}">${I(ic)}${t}</button>`;
+    const menu = $('ctx');
+    menu.innerHTML =
+      it('reply', 'reply', 'Reply') +
+      (mine ? it('edit', 'pencil', 'Edit') : '') +
+      it('forward', 'forward', 'Forward') +
+      (mine ? it('resend', 'rotate-cw', 'Resend') : '') +
+      '<div class="sep"></div>' +
+      it('copy', 'copy', 'Copy text') +
+      it('delete', 'trash-2', 'Delete for me', 'dg');
+    menu.classList.add('show');
+    const r = menu.getBoundingClientRect();
+    menu.style.left = Math.max(8, Math.min(x, innerWidth - r.width - 8)) + 'px';
+    menu.style.top = Math.max(8, Math.min(y, innerHeight - r.height - 8)) + 'px';
+    menu.querySelectorAll('.ci').forEach((b) => {
+      b.onclick = () => msgAction(b.dataset.act, m);
+    });
+  }
+
+  async function msgAction(act, m) {
+    closeCtx();
+    if (act === 'reply') return setReply(m);
+    if (act === 'edit') return setEdit(m);
+    if (act === 'forward') return openForward(m);
+    if (act === 'resend') {
+      const { doc, updateDoc, serverTimestamp, db } = F();
+      try {
+        await updateDoc(doc(db, 'messages', m.id), {
+          timestamp: serverTimestamp(),
+          status: 'sent'
+        });
+        banner('Resent', 'Message timestamp updated.');
+      } catch (e) {
+        banner('Resend failed', e.message);
+      }
+      return;
+    }
+    if (act === 'copy') {
+      try {
+        await navigator.clipboard.writeText(m.text);
+        banner('Copied', 'Message copied.');
+      } catch (e) {
+        banner('Copy failed', 'Clipboard not available.');
+      }
+      return;
+    }
+    if (act === 'delete') {
+      if (await confirmBox('Delete message', 'Hide this message from this device only?', 'Delete')) {
+        S.hidden.add(m.id);
+        savePrefs();
+        sched('chat', 'list');
+      }
+    }
+  }
+
+  function openForward(m) {
+    const list = $('fwdList');
+    list.innerHTML = [...S.peers.values()].map((p) =>
+      `<button class="fi" data-fwd="${p.uid}"><div class="avatar av-s">${avHTML(pname(p.uid), p.avatarUrl)}</div><span>${esc(pname(p.uid))}</span></button>`
+    ).join('');
+    list.onclick = async (e) => {
+      const b = e.target.closest('[data-fwd]');
+      if (!b) return;
+      const { collection, addDoc, serverTimestamp, db, auth } = F();
+      try {
+        await addDoc(collection(db, 'messages'), {
+          senderId: auth.currentUser.uid,
+          receiverId: b.dataset.fwd,
+          text: m.text,
+          type: 'normal',
+          status: 'sent',
+          timestamp: serverTimestamp(),
+          forwarded: true
+        });
+        banner('Forwarded', 'Message sent.');
+        closeM('forwardModal');
+        scrollToBottom(true);
+      } catch (er) {
+        banner('Forward failed', er.message);
+      }
+    };
+    openM('forwardModal');
+  }
+
+  function bindMessages() {
+    const box = $('msgs');
+    let dr = null;
+
+    box.addEventListener('pointerdown', (e) => {
+      if (e.button > 0 || e.target.closest('button')) return;
+      const row = e.target.closest('.row');
+      if (!row) return;
+      dr = { row, x: e.clientX, y: e.clientY, on: false, d: 0, pid: e.pointerId };
+      try { box.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+    });
+
+    box.addEventListener('pointermove', (e) => {
+      if (!dr || e.pointerId !== dr.pid) return;
+      const dx = e.clientX - dr.x;
+      const dy = e.clientY - dr.y;
+      if (!dr.on) {
+        if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { dr = null; return; }
+        if (Math.abs(dx) > 12) { dr.on = true; dr.row.classList.add('drag'); }
+      }
+      if (dr.on) {
+        e.preventDefault();
+        dr.d = Math.max(-100, Math.min(100, dx));
+        const w = dr.row.querySelector('.wrap');
+        if (w) w.style.transform = `translateX(${dr.d}px)`;
+      }
+    }, { passive: false });
+
+    const end = () => {
+      if (!dr) return;
+      try { box.releasePointerCapture(dr.pid); } catch (_) { /* ignore */ }
+      dr.row.classList.remove('drag');
+      const w = dr.row.querySelector('.wrap');
+      if (w) w.style.transform = '';
+      if (Math.abs(dr.d) > 55) {
+        const m = S.msgs.get(dr.row.dataset.msg);
+        if (m) setReply(m);
+      }
+      dr = null;
+    };
+    box.addEventListener('pointerup', end);
+    box.addEventListener('pointercancel', end);
+
+    box.addEventListener('contextmenu', (e) => {
+      const row = e.target.closest('.row');
+      const m = row && S.msgs.get(row.dataset.msg);
+      if (m) { e.preventDefault(); openCtx(m, e.clientX, e.clientY); }
+    });
+
+    box.addEventListener('click', (e) => {
+      if (e.target.closest('[data-more]')) {
+        const h = box.scrollHeight;
+        S.limit += PAGE;
+        R.chat();
+        box.scrollTop += box.scrollHeight - h;
+        return;
+      }
+      const b = e.target.closest('[data-dots]');
+      const m = b && S.msgs.get(b.dataset.dots);
+      if (!m) return;
+      const r = b.getBoundingClientRect();
+      openCtx(m, r.left - 150, r.bottom + 4);
+    });
+
+    box.addEventListener('scroll', closeCtx, { passive: true });
+  }
+
+  /* ============================================================
+   *  SEARCH / EXPORT
+   * ============================================================ */
+  function openSearch() {
+    $('searchBar').classList.add('show');
+    $('searchInput').focus();
+  }
+
+  function closeSearch() {
+    $('searchBar').classList.remove('show');
+    $('searchInput').value = '';
+    S.q = '';
+    $('searchCount').textContent = '';
+    R.chat();
+  }
+
+  function download(name, type, content) {
+    const url = URL.createObjectURL(new Blob([content], { type }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  function exportChat(kind) {
     closeM('chatMenuModal');
-    if (!(await confirmBox('Clear chat view', 'Hide all messages with this partner on this device? They stay stored in Firestore.', 'Clear'))) return;
-    S.msgs.forEach((m) => { if (m.peer === S.active) S.hidden.add(m.id); }); savePrefs(); sched('chat', 'list'); banner('Cleared', 'Messages hidden on this device.');
-  });
-  click('searchBtn', () => $('searchBar').classList.contains('show') ? closeSearch() : openSearch()); click('searchClose', closeSearch);
-  $('searchInput').addEventListener('input', (e) => {
-    S.q = e.target.value.trim(); R.chat();
-    $('searchCount').textContent = S.q ? visible().filter((m) => m.text.toLowerCase().includes(S.q.toLowerCase())).length + ' found' : '';
-  });
-
-  window.addEventListener('insha-signed-in', () => {
-    if (!S.notifyAsked && 'Notification' in window && Notification.permission === 'default') { S.notifyAsked = true; setTimeout(askNotifications, 1500); }
-    syncNotify(); setupPush();
-  });
-}
-
-/* ---------- presence / visibility (single set of handlers) ---------- */
-let bgT = 0;
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { setPresence(false); if (S.autoLock && S.pin && S.user) bgT = setTimeout(() => document.hidden && openLock(), 120000); }
-  else { clearTimeout(bgT); if (S.active) S.unread[S.active] = 0; updateTitle(); sched('list'); beat(); scrollToBottom(true); }
-});
-window.addEventListener('pagehide', () => setPresence(false));
-window.addEventListener('blur', () => setPresence(false));
-window.addEventListener('focus', () => { beat(); if (S.active) S.unread[S.active] = 0; updateTitle(); sched('list'); scrollToBottom(true); });
-setInterval(beat, 30000);
-setInterval(() => { if (S.peers.size && !document.hidden) sched('head', 'list'); }, 20000);
-
-/* ---------- boot ---------- */
-function boot() {
-  if (S.booted) return; S.booted = true;
-  const { auth, onAuthStateChanged } = F();
-  const bootTimer = setTimeout(() => { if (!S.authResolved) fallbackToAuth('boot-timeout'); }, BOOT_TIMEOUT_MS);
-  Object.assign(R, { chat: R.chat, composer: R.composer });
-  const qp = new URLSearchParams(location.search);
-  S.pendingPair = parseCode(qp.get('pair')); S.pendingPeer = qp.get('peer');
-  if (qp.has('pair') || qp.has('peer')) history.replaceState(null, '', location.pathname);
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('firebase-messaging-sw.js').then((r) => { S.swReg = r; setupPush(); }).catch((e) => console.warn('[sw]', e.message));
-    navigator.serviceWorker.addEventListener('message', (e) => { if (e.data && e.data.type === 'open') openFromNotification(e.data); });
+    const list = [...S.msgs.values()]
+      .filter((m) => m.peer === S.active)
+      .sort((a, b) => a.ts - b.ts);
+    const who = pname();
+    if (!list.length) return banner('Nothing to export', 'Chat is empty.');
+    if (kind === 'json') {
+      download(
+        `insha-chat-${Date.now()}.json`,
+        'application/json',
+        JSON.stringify({
+          exportedAt: new Date().toISOString(),
+          with: who,
+          messages: list.map((m) => ({
+            id: m.id,
+            from: m.dir === 'out' ? 'You' : who,
+            text: m.text,
+            time: new Date(m.ts).toISOString(),
+            edited: m.edited,
+            forwarded: m.forwarded
+          }))
+        }, null, 2)
+      );
+    } else {
+      download(
+        `insha-chat-${Date.now()}.txt`,
+        'text/plain',
+        `INSHA Private Chat\nWith: ${who}\nExported: ${new Date().toLocaleString()}\n\n` +
+        list.map((m) =>
+          `[${new Date(m.ts).toLocaleString()}] ${m.dir === 'out' ? 'You' : who}: ${m.text}${m.edited ? ' (edited)' : ''}`
+        ).join('\n') + '\n'
+      );
+    }
+    banner('Exported', 'Chat downloaded.');
   }
-  onAuthStateChanged(auth, async (user) => {
-    if (S.registering) return;
-    S.authResolved = true; clearTimeout(bootTimer);
-    try { if (user) { await enterOnce(user); window.dispatchEvent(new Event('insha-signed-in')); } else leave(); }
-    catch (e) { console.error('[auth] enter failed:', e); fallbackToAuth('enter-failed', 'Could not load your account: ' + (e.message || e.code || 'unknown error')); }
+
+  /* ============================================================
+   *  QR PAIRING
+   * ============================================================ */
+  const pairUrl = () => location.origin + location.pathname + '?pair=' + (S.profile?.partnerCode || '');
+
+  function drawQR() {
+    const code = S.profile?.partnerCode || '';
+    $('qrCode').textContent = code;
+    try {
+      const q = qrcode(0, 'M');
+      q.addData(pairUrl());
+      q.make();
+      const n = q.getModuleCount();
+      let d = '';
+      for (let r = 0; r < n; r++) {
+        for (let c = 0; c < n; c++) {
+          if (q.isDark(r, c)) d += `M${c + 2} ${r + 2}h1v1h-1z`;
+        }
+      }
+      $('qrBox').innerHTML = `<svg viewBox="0 0 ${n + 4} ${n + 4}" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+    } catch (e) {
+      $('qrBox').innerHTML = `<div style="color:#000;font:700 18px var(--mono);display:grid;place-items:center;height:100%">${esc(code)}</div>`;
+    }
+  }
+
+  function openQR() {
+    drawQR();
+    openM('qrModal');
+    openSide(false);
+    closeM('settingsModal');
+  }
+
+  const parseCode = (v) => {
+    const m = /INSHA-[A-Z0-9]{4}/i.exec(v || '');
+    return m ? m[0].toUpperCase() : null;
+  };
+
+  function stopScan() {
+    if (S.scanT) { clearInterval(S.scanT); S.scanT = null; }
+    if (S.stream) {
+      S.stream.getTracks().forEach((t) => {
+        try { t.stop(); } catch (_) { /* ignore */ }
+      });
+      S.stream = null;
+    }
+    const wrap = $('scanWrap');
+    const btnText = $('scanBtnText');
+    if (wrap) wrap.classList.add('hidden');
+    if (btnText) btnText.textContent = "Scan partner's QR";
+  }
+
+  let jsQRPromise = null;
+  const loadJsQR = () => {
+    if (window.jsQR) return Promise.resolve();
+    if (jsQRPromise) return jsQRPromise;
+    jsQRPromise = new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+      s.onload = res;
+      s.onerror = rej;
+      document.head.appendChild(s);
+    });
+    return jsQRPromise;
+  };
+
+  async function toggleScan() {
+    if (S.stream) return stopScan();
+    try {
+      S.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const v = $('scanVideo');
+      v.srcObject = S.stream;
+      await v.play();
+      $('scanWrap').classList.remove('hidden');
+      $('scanBtnText').textContent = 'Stop scanning';
+      const det = 'BarcodeDetector' in window
+        ? new BarcodeDetector({ formats: ['qr_code'] })
+        : null;
+      if (!det) await loadJsQR();
+      const cv = document.createElement('canvas');
+      const cx = cv.getContext('2d', { willReadFrequently: true });
+      S.scanT = setInterval(async () => {
+        if (v.readyState < 2) return;
+        let val = null;
+        if (det) {
+          const r = await det.detect(v).catch(() => []);
+          val = r[0]?.rawValue;
+        } else {
+          const k = Math.min(1, 480 / v.videoWidth);
+          cv.width = v.videoWidth * k;
+          cv.height = v.videoHeight * k;
+          cx.drawImage(v, 0, 0, cv.width, cv.height);
+          const r = jsQR(cx.getImageData(0, 0, cv.width, cv.height).data, cv.width, cv.height);
+          val = r && r.data;
+        }
+        const code = parseCode(val);
+        if (code) { stopScan(); pairWith(code); }
+      }, 250);
+    } catch (e) {
+      stopScan();
+      banner('Camera unavailable', 'Allow camera access, or type the code instead.');
+    }
+  }
+
+  async function pairWith(code, btn) {
+    if (btn) setBusy(btn, true);
+    try {
+      const pd = await sendRequest(code);
+      closeM('reconModal');
+      closeM('qrModal');
+      stopScan();
+      banner('Request sent', 'Waiting for ' + (pd.displayName || 'your partner') + ' to accept.');
+      return true;
+    } catch (e) {
+      fbFail(e, 'Pair failed');
+      return false;
+    } finally {
+      if (btn) setBusy(btn, false);
+    }
+  }
+
+  function doPair(inp, btn) {
+    const c = inp.value.trim();
+    if (!c) return banner('No code', "Enter your partner's code.");
+    pairWith(c, btn).then((ok) => { if (ok) inp.value = ''; });
+  }
+
+  const copy = (t) => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(t)
+        .then(() => banner('Copied', 'Code copied.'))
+        .catch(() => banner('Your code', t));
+    } else {
+      banner('Your code', t);
+    }
+  };
+
+  /* ============================================================
+   *  AUTH / SESSION
+   * ============================================================ */
+  async function enter(user, name) {
+    S.user = user;
+    S.profile = normProfile(await ensureProfile(user, name));
+    loadPrefs(S.profile);
+    S.prevCount = S.profile.partners.length;
+    watchProfile();
+    watchRequests();
+    startChat();
+    beat();
+    syncNotify();
+    safeShow(S.prevCount ? 'appScreen' : 'pairScreen');
+    sched('side', 'head', 'pair', 'list', 'chat', 'composer');
+    if (S.pin && !S.registering && !S.freshLogin) setTimeout(openLock, 300);
+  }
+
+  let enterJob = null;
+  function enterOnce(user, name) {
+    if (S.enteredUid === user.uid) return Promise.resolve();
+    if (enterJob && enterJob.uid === user.uid) return enterJob.p;
+    const p = enter(user, name)
+      .then(() => { S.enteredUid = user.uid; })
+      .catch((e) => { if (!S.profile) S.user = null; throw e; })
+      .finally(() => { if (enterJob && enterJob.p === p) enterJob = null; });
+    enterJob = { uid: user.uid, p };
+    return p;
+  }
+
+  function leave() {
+    S.unsubs.forEach((u) => { try { u(); } catch (_) { /* ignore */ } });
+    S.unsubs = [];
+    S.peerSubs.forEach((u) => { try { u(); } catch (_) { /* ignore */ } });
+    S.peerSubs.clear();
+    clearActivePeer();
+
+    Object.assign(S, {
+      user: null,
+      profile: null,
+      peers: new Map(),
+      linked: new Set(),
+      active: null,
+      prevCount: undefined,
+      enteredUid: null,
+      msgs: new Map(),
+      drawn: new Set(),
+      loaded: { in: false, out: false },
+      ready: false,
+      unread: {},
+      sentName: null,
+      reqShown: null,
+      quick: [...DEFAULT_QR],
+      soundOn: true,
+      deskOn: false,
+      aliases: {},
+      hidden: new Set(),
+      replyTo: null,
+      editing: null,
+      fcmToken: null
+    });
+
+    updateTitle();
+    openSide(false);
+    ['settingsModal', 'qrModal', 'reqModal', 'reconModal'].forEach(closeM);
+    stopScan();
+    safeShow('authScreen');
+    setAuthMode('login');
+  }
+
+  async function logout() {
+    await setPresence(false);
+    try {
+      if (S.fcmToken) {
+        const { doc, updateDoc, arrayRemove, db, auth } = F();
+        await updateDoc(doc(db, 'users', auth.currentUser.uid), { fcmTokens: arrayRemove(S.fcmToken) });
+        S.fcmToken = null;
+      }
+    } catch (e) { /* best-effort */ }
+    F().signOut(F().auth);
+  }
+
+  function setAuthMode(m) {
+    S.authMode = m;
+    const l = m === 'login';
+    $('authTitle').textContent = l ? 'Welcome back' : 'Create account';
+    $('authSub').textContent = l ? 'Sign in to continue your private chat.' : 'Set up your account, then pair with your partner.';
+    $('authBtnText').textContent = l ? 'Sign in' : 'Create account';
+    $('authToggleText').textContent = l ? "Don't have an account?" : 'Already have an account?';
+    $('authToggleLink').textContent = l ? 'Create one' : 'Sign in';
+    $('nameGroup').classList.toggle('hidden', l);
+    $('authPass').autocomplete = l ? 'current-password' : 'new-password';
+    $('authErr').classList.remove('show');
+  }
+
+  const authErr = (m) => {
+    $('authErr').textContent = m;
+    $('authErr').classList.add('show');
+  };
+
+  async function onAuthSubmit(e) {
+    e.preventDefault();
+    $('authErr').classList.remove('show');
+    const email = $('authEmail').value.trim();
+    const pass = $('authPass').value.trim();
+    const name = $('authName').value.trim();
+    if (!email || !pass) return authErr('Please enter email and password.');
+    if (S.authMode === 'register' && !name) return authErr('Please enter your name.');
+    if (pass.length < 6) return authErr('Password must be at least 6 characters.');
+
+    const { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword } = F();
+    setBusy($('authBtn'), true);
+    try {
+      S.freshLogin = true;
+      if (S.authMode === 'register') {
+        S.registering = true;
+        const c = await createUserWithEmailAndPassword(auth, email, pass);
+        await enterOnce(c.user, name);
+      } else {
+        const c = await signInWithEmailAndPassword(auth, email, pass);
+        await enterOnce(c.user);
+      }
+      window.dispatchEvent(new Event('insha-signed-in'));
+    } catch (err) {
+      const c = err.code;
+      authErr(
+        c === 'auth/email-already-in-use' ? 'Email already registered. Try signing in.'
+          : ['auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found'].includes(c) ? 'Invalid email or password.'
+            : c === 'auth/weak-password' ? 'Password too weak (min 6 characters).'
+              : c === 'auth/network-request-failed' ? 'Network error. Check your connection.'
+                : err.message || 'Authentication failed.'
+      );
+    } finally {
+      S.registering = false;
+      S.freshLogin = false;
+      setBusy($('authBtn'), false);
+    }
+  }
+
+  /* ============================================================
+   *  PULL TO REFRESH / KEYBOARD
+   * ============================================================ */
+  function bindPullToRefresh() {
+    const el = $('ptr');
+    const txt = $('ptrText');
+    const TH = 70;
+    const MAX = 110;
+    if (!(('ontouchstart' in window) || navigator.maxTouchPoints > 0)) return;
+
+    let st = { y: 0, pulling: false, active: false, trig: false };
+
+    const atTop = (e) => {
+      let n = e.target;
+      while (n && n !== document.body) {
+        if (n.nodeType === 1 && n.scrollHeight > n.clientHeight + 2) {
+          const o = getComputedStyle(n).overflowY;
+          if (o === 'auto' || o === 'scroll') return n.scrollTop <= 0;
+        }
+        n = n.parentElement;
+      }
+      return true;
+    };
+
+    const reset = () => {
+      st = { y: 0, pulling: false, active: false, trig: false };
+      el.classList.remove('active', 'visible', 'refreshing');
+      el.style.height = '0px';
+      txt.textContent = 'Pull to refresh';
+    };
+
+    window.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1 || S.locked ||
+          document.body.classList.contains('keyboard-open') ||
+          (e.target.closest && e.target.closest('.cw,.modal,.pop,.lock')) ||
+          !atTop(e)) return;
+      st = { y: e.touches[0].clientY, pulling: true, active: false, trig: false };
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      if (!st.pulling || e.touches.length !== 1) return;
+      const dy = e.touches[0].clientY - st.y;
+      if (dy <= 0) {
+        if (st.active) {
+          el.style.height = '0px';
+          el.classList.remove('visible');
+        }
+        return;
+      }
+      if (!atTop(e)) return reset();
+      const d = Math.min(MAX, dy * .55);
+      st.active = true;
+      el.classList.add('active');
+      el.style.height = d + 'px';
+      if (d > 12) el.classList.add('visible');
+      st.trig = d >= TH;
+      txt.textContent = st.trig ? 'Release to refresh' : 'Pull to refresh';
+      if (e.cancelable && d > 8) e.preventDefault();
+    }, { passive: false });
+
+    const end = () => {
+      if (!st.pulling) return;
+      if (st.active && st.trig) {
+        el.classList.remove('active');
+        el.style.height = '0px';
+        el.classList.add('refreshing');
+        txt.textContent = 'Refreshing…';
+        setTimeout(() => location.reload(), 420);
+      } else {
+        reset();
+      }
+    };
+    window.addEventListener('touchend', end, { passive: true });
+    window.addEventListener('touchcancel', end, { passive: true });
+  }
+
+  function setupKeyboard() {
+    const root = document.documentElement;
+    const vv = window.visualViewport;
+    let baseH = innerHeight;
+    let lastW = innerWidth;
+
+    const apply = () => {
+      const h = vv ? vv.height : innerHeight;
+      const top = vv ? vv.offsetTop : 0;
+      if (innerWidth !== lastW) { lastW = innerWidth; baseH = innerHeight; }
+      baseH = Math.max(baseH, innerHeight, h);
+      const open = baseH - h > 150;
+      root.style.setProperty('--app-h', Math.round(h) + 'px');
+      root.style.setProperty('--app-top', Math.round(top) + 'px');
+      document.body.classList.toggle('keyboard-open', open);
+      if (open) scrollToBottom(true);
+    };
+
+    if (vv) {
+      vv.addEventListener('resize', apply);
+      vv.addEventListener('scroll', apply);
+    }
+    window.addEventListener('resize', apply);
+    window.addEventListener('orientationchange', () => setTimeout(() => {
+      apply();
+      scrollToBottom(true);
+    }, 300));
+    $('msgInput').addEventListener('focus', () => setTimeout(() => {
+      apply();
+      scrollToBottom(true);
+    }, 250));
+    apply();
+  }
+
+  /* ============================================================
+   *  QUICK REPLY POPOVER
+   * ============================================================ */
+  const closePops = () => {
+    $('quickPop').classList.remove('show');
+    $('plusBtn').classList.remove('rot');
+  };
+
+  function togglePop() {
+    const el = $('quickPop');
+    const open = !el.classList.contains('show');
+    closePops();
+    if (open) {
+      el.classList.add('show');
+      $('plusBtn').classList.add('rot');
+      R.quick();
+      if (!mobile()) setTimeout(() => $('qpInput').focus(), 60);
+    }
+  }
+
+  function addQuick(inp) {
+    const v = inp.value.trim();
+    if (!v) return;
+    S.quick.push(v.slice(0, 60));
+    inp.value = '';
+    savePrefs();
+    sched('side', 'composer');
+  }
+
+  /* ============================================================
+   *  EVENT WIRING
+   * ============================================================ */
+  function bind() {
+    const click = (id, fn) => { const el = $(id); if (el) el.onclick = fn; };
+    const enter = (id, fn) => {
+      const el = $(id);
+      if (el) el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); fn(); }
+      });
+    };
+
+    $('authForm').addEventListener('submit', onAuthSubmit);
+    click('authToggle', () => setAuthMode(S.authMode === 'login' ? 'register' : 'login'));
+
+    /* Pairing */
+    click('pairCopy', () => copy(S.profile?.partnerCode || ''));
+    click('copyCode', () => copy(S.profile?.partnerCode || ''));
+    click('reconCopy', () => copy(S.profile?.partnerCode || ''));
+    click('pairBtn', () => doPair($('pairInput'), $('pairBtn')));
+    click('sidePairBtn', () => doPair($('sidePair'), $('sidePairBtn')));
+    click('reconBtn', () => doPair($('reconInput'), $('reconBtn')));
+    click('qrPairBtn', () => doPair($('qrPairInput'), $('qrPairBtn')));
+    enter('pairInput', () => $('pairBtn').click());
+    enter('sidePair', () => $('sidePairBtn').click());
+    enter('reconInput', () => $('reconBtn').click());
+    enter('qrPairInput', () => $('qrPairBtn').click());
+    click('pairQr', openQR);
+    click('sideQr', openQR);
+    click('qrBtn', openQR);
+    click('listAdd', openQR);
+    click('rPartner', openQR);
+    click('qrClose', () => { stopScan(); closeM('qrModal'); });
+    click('scanBtn', toggleScan);
+    click('qrCopy', () => copy(S.profile?.partnerCode || ''));
+    click('qrShare', async () => {
+      const u = pairUrl();
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: 'Connect on INSHA', text: 'Connect with me on INSHA', url: u });
+        } else {
+          await navigator.clipboard.writeText(u);
+          banner('Link copied', 'Send it to your partner.');
+        }
+      } catch (_) { /* user cancelled */ }
+    });
+    $('qrModal').addEventListener('click', (e) => {
+      if (e.target === $('qrModal')) stopScan();
+    });
+    click('pairSkip', () => { safeShow('appScreen'); sched('chat'); });
+    click('pairLogout', logout);
+    click('logout', async () => {
+      if (await confirmBox('Log out', 'Sign out of INSHA on this device?', 'Log out')) logout();
+    });
+    click('reconLater', () => closeM('reconModal'));
+    click('reqAccept', async () => {
+      const r = S.reqIn;
+      if (!r) return closeM('reqModal');
+      setBusy($('reqAccept'), true);
+      try {
+        await acceptRequest(r);
+        closeM('reqModal');
+      } catch (e) {
+        fbFail(e, 'Could not connect');
+      } finally {
+        setBusy($('reqAccept'), false);
+      }
+    });
+    click('reqDecline', async () => {
+      const r = S.reqIn;
+      closeM('reqModal');
+      if (r) await declineRequest(r);
+    });
+    click('disconnect', async () => {
+      if (!S.active) return banner('No partner', 'Nothing to disconnect.');
+      if (!(await confirmBox(
+        'Disconnect ' + pname(),
+        'This closes your private chat with this person. Past messages stay stored but are hidden until you pair again.',
+        'Disconnect'
+      ))) return;
+      try {
+        await unpair(S.active);
+        banner('Disconnected', 'Partner removed.');
+      } catch (e) {
+        banner('Failed', e.message);
+      }
+    });
+    $('peerList').addEventListener('click', async (e) => {
+      const b = e.target.closest('[data-unlink]');
+      if (!b) return;
+      const id = b.dataset.unlink;
+      if (await confirmBox(
+        'Disconnect ' + pname(id),
+        'This closes your private chat with this person. Past messages stay stored but are hidden until you pair again.',
+        'Disconnect'
+      )) {
+        try { await unpair(id); }
+        catch (er) { banner('Failed', er.message); }
+      }
+    });
+
+    /* Nav */
+    click('menuBtn', toggleSide);
+    click('sideClose', () => openSide(false));
+    click('scrim', () => openSide(false));
+    click('rChats', () => { if (mobile()) openSide(false); else expandSide(); });
+    click('rSettings', openSettings);
+    click('pairSettingsBtn', openSettings);
+    click('closeSettings', () => closeM('settingsModal'));
+    click('rProfile', openMyProfile);
+    click('pairProfileBtn', openMyProfile);
+    $('convoBox').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-peer]');
+      if (b) setActive(b.dataset.peer);
+    });
+    $('banner').addEventListener('click', () => {
+      $('banner').classList.remove('show');
+      if (S.bannerPeer) setActive(S.bannerPeer);
+    });
+
+    /* Composer */
+    const ta = $('msgInput');
+    const touch = window.matchMedia('(pointer: coarse)');
+    let shiftHeld = false;
+    const submitNow = () => $('composer').requestSubmit();
+
+    ta.addEventListener('input', () => {
+      ta.style.height = 'auto';
+      ta.style.height = Math.min(ta.scrollHeight, 100) + 'px';
+    });
+    ta.addEventListener('keydown', (e) => {
+      shiftHeld = e.shiftKey;
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        submitNow();
+      }
+    });
+    ta.addEventListener('keyup', (e) => { shiftHeld = e.shiftKey; });
+    ta.addEventListener('beforeinput', (e) => {
+      if (e.inputType === 'insertLineBreak' && !(shiftHeld && !touch.matches)) {
+        e.preventDefault();
+        submitNow();
+      }
+    });
+    $('sendBtn').addEventListener('mousedown', (e) => e.preventDefault());
+    $('composer').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = ta.value;
+      ta.value = '';
+      ta.style.height = 'auto';
+      send(v);
+      ta.focus();
+      closePops();
+      requestAnimationFrame(() => scrollToBottom(true));
+    });
+    click('replyCancel', clearReply);
+    $('plusBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      togglePop();
+    });
+    $('qpList').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-q]');
+      if (b) { send(S.quick[Number(b.dataset.q)]); closePops(); }
+    });
+    click('qpAdd', () => addQuick($('qpInput')));
+    enter('qpInput', () => addQuick($('qpInput')));
+    click('qrAdd', () => addQuick($('qrInput')));
+    enter('qrInput', () => addQuick($('qrInput')));
+    $('qrList').addEventListener('click', async (e) => {
+      const ed = e.target.closest('[data-edit]');
+      const dl = e.target.closest('[data-del]');
+      if (ed) {
+        const i = Number(ed.dataset.edit);
+        const n = prompt('Edit quick reply:', S.quick[i]);
+        if (n && n.trim()) {
+          S.quick[i] = n.trim().slice(0, 60);
+          savePrefs();
+          sched('side', 'composer');
+        }
+      }
+      if (dl) {
+        const i = Number(dl.dataset.del);
+        if (await confirmBox('Delete quick reply', `Remove "${S.quick[i]}"?`, 'Delete')) {
+          S.quick.splice(i, 1);
+          savePrefs();
+          sched('side', 'composer');
+        }
+      }
+    });
+    document.querySelectorAll('[data-qr]').forEach((b) => {
+      b.onclick = () => S.active ? send(b.dataset.qr) : banner('Not paired', 'Pair with your partner first.');
+    });
+
+    /* Global handlers */
+    document.addEventListener('click', (e) => {
+      const t = e.target;
+      if (!t.closest('#ctx') && !t.closest('[data-dots]')) closeCtx();
+      if (!t.closest('.pop') && !t.closest('#plusBtn')) closePops();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { closePops(); closeCtx(); }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b' &&
+          !$('appScreen').classList.contains('hidden')) {
+        e.preventDefault();
+        toggleSide();
+      }
+    });
+    document.querySelectorAll('.modal').forEach((m) => {
+      m.addEventListener('click', (e) => {
+        if (e.target === m && m.id !== 'reqModal') {
+          if (m.id === 'modal') closeModal(false);
+          else m.classList.remove('show');
+        }
+      });
+    });
+    click('mNo', () => closeModal(false));
+    click('mYes', () => closeModal(true));
+
+    /* Settings toggles */
+    $('soundToggle').addEventListener('change', (e) => {
+      S.soundOn = e.target.checked;
+      savePrefs();
+      if (S.soundOn) chime();
+    });
+    $('deskToggle').addEventListener('change', async (e) => {
+      if (e.target.checked) {
+        if (!(await askNotifications())) e.target.checked = false;
+      } else {
+        S.deskOn = false;
+        savePrefs();
+      }
+    });
+    click('notifyBtn', askNotifications);
+    $('passToggle').addEventListener('change', async (e) => {
+      if (e.target.checked) { openSetPass(); return; }
+      if (await confirmBox(
+        'Turn off password protection?',
+        'INSHA will open without a passcode on this device.',
+        'Turn off'
+      )) {
+        localStorage.removeItem(PIN_KEY);
+        localStorage.setItem(BIO_KEY, '0');
+        banner('Password protection off', 'No passcode is required now.');
+      }
+      loadLockPrefs();
+    });
+    click('changePass', openSetPass);
+    click('cancelSetPin', () => { closeM('passModal'); loadLockPrefs(); });
+    $('bioToggle').addEventListener('change', async (e) => {
+      if (e.target.checked) {
+        if (!bioOK()) {
+          e.target.checked = false;
+          return banner('Not available', 'This browser does not support biometrics.');
+        }
+        if (!S.pin) {
+          e.target.checked = false;
+          return banner('Turn on password protection first', 'A passcode is required.');
+        }
+        S.bioEnabled = true;
+        if (!(await tryBio())) {
+          S.bioEnabled = false;
+          e.target.checked = false;
+          return banner('Setup failed', 'Could not enroll biometrics.');
+        }
+        localStorage.setItem(BIO_KEY, '1');
+      } else {
+        S.bioEnabled = false;
+        localStorage.setItem(BIO_KEY, '0');
+      }
+      loadLockPrefs();
+    });
+    $('autoLockToggle').addEventListener('change', (e) => {
+      S.autoLock = e.target.checked;
+      localStorage.setItem(AL_KEY, S.autoLock ? '1' : '0');
+    });
+    click('bioBtn', async () => {
+      if (await tryBio()) { closeLock(); banner('Unlocked', 'Welcome back.'); }
+      else banner('Biometric failed', 'Try your passcode.');
+    });
+    click('lockNow', () => S.pin ? openLock() : banner('No passcode', 'Turn on password protection in Settings.'));
+    click('rLock', () => S.pin ? openLock() : openSetPass());
+
+    /* Profile */
+    click('cancelMyProfile', () => closeM('myProfileModal'));
+    click('saveMyProfile', async () => {
+      const n = $('myDisplayName').value.trim();
+      if (!n) return banner('Name required', 'Enter a display name.');
+      const bio = $('myBio').value.slice(0, 240);
+      setBusy($('saveMyProfile'), true);
+      try {
+        const { doc, updateDoc, db, auth } = F();
+        await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+          displayName: n,
+          bio,
+          avatarUrl: S.tmpAvatar || null
+        });
+        S.profile = { ...S.profile, displayName: n, bio, avatarUrl: S.tmpAvatar || null };
+        sched('side');
+        closeM('myProfileModal');
+        banner('Profile saved', 'Your partners see the update now.');
+      } catch (err) {
+        banner('Save failed', err.message);
+      } finally {
+        setBusy($('saveMyProfile'), false);
+      }
+    });
+    $('myAvatarFile').addEventListener('change', async (e) => {
+      const f = e.target.files[0];
+      e.target.value = '';
+      if (!f) return;
+      if (!f.type.startsWith('image/')) return banner('Not an image', 'Pick a photo.');
+      try { await startCrop(f); }
+      catch (err) { banner('Photo failed', 'Could not read that image.'); }
+    });
+    bindCrop();
+
+    /* Partner profile / rename / chat menu */
+    click('peerAv', openPartnerProfile);
+    click('peerWho', openPartnerProfile);
+    click('closePartnerProfile', () => closeM('partnerProfileModal'));
+    click('renamePartnerBtn', () => { closeM('partnerProfileModal'); openRename(); });
+    $('partnerProfileAv').addEventListener('click', (e) => {
+      const img = e.currentTarget.querySelector('img');
+      if (img && img.src) {
+        $('photoViewImg').src = img.src;
+        $('photoView').classList.add('show');
+      }
+    });
+    click('closePhotoView', () => $('photoView').classList.remove('show'));
+    $('photoView').addEventListener('click', (e) => {
+      if (e.target === $('photoView')) $('photoView').classList.remove('show');
+    });
+    click('cancelRename', () => closeM('renameModal'));
+    click('saveRename', () => {
+      const v = $('renameInput').value.trim();
+      if (!v) return banner('Name required', 'Enter a name.');
+      S.aliases[S.active] = v;
+      savePrefs();
+      sched('head', 'list', 'chat', 'side');
+      closeM('renameModal');
+      banner('Renamed', 'Partner nickname updated locally.');
+    });
+    click('cancelForward', () => closeM('forwardModal'));
+    click('chatMenuBtn', () => openM('chatMenuModal'));
+    click('cancelChatMenu', () => closeM('chatMenuModal'));
+    click('menuPartner', () => { closeM('chatMenuModal'); openPartnerProfile(); });
+    click('menuSearch', () => { closeM('chatMenuModal'); openSearch(); });
+    click('menuRename', () => { closeM('chatMenuModal'); openRename(); });
+    click('menuTxt', () => exportChat('txt'));
+    click('menuJson', () => exportChat('json'));
+    click('menuClear', async () => {
+      closeM('chatMenuModal');
+      if (!(await confirmBox(
+        'Clear chat view',
+        'Hide all messages with this partner on this device? They stay stored in Firestore.',
+        'Clear'
+      ))) return;
+      S.msgs.forEach((m) => { if (m.peer === S.active) S.hidden.add(m.id); });
+      savePrefs();
+      sched('chat', 'list');
+      banner('Cleared', 'Messages hidden on this device.');
+    });
+    click('searchBtn', () => $('searchBar').classList.contains('show') ? closeSearch() : openSearch());
+    click('searchClose', closeSearch);
+    $('searchInput').addEventListener('input', (e) => {
+      S.q = e.target.value.trim();
+      R.chat();
+      $('searchCount').textContent = S.q
+        ? visible().filter((m) => m.text.toLowerCase().includes(S.q.toLowerCase())).length + ' found'
+        : '';
+    });
+
+    window.addEventListener('insha-signed-in', () => {
+      if (!S.notifyAsked && 'Notification' in window && Notification.permission === 'default') {
+        S.notifyAsked = true;
+        setTimeout(askNotifications, 1500);
+      }
+      syncNotify();
+      setupPush();
+    });
+  }
+
+  /* ============================================================
+   *  PRESENCE / VISIBILITY
+   * ============================================================ */
+  let bgT = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      setPresence(false);
+      if (S.autoLock && S.pin && S.user) {
+        bgT = setTimeout(() => document.hidden && openLock(), 120000);
+      }
+    } else {
+      clearTimeout(bgT);
+      if (S.active) S.unread[S.active] = 0;
+      updateTitle();
+      sched('list');
+      beat();
+      scrollToBottom(true);
+    }
   });
-  const safe = (fn) => { try { fn(); } catch (e) { console.error('[boot step]', e); } };
-  safe(() => { if (localStorage.getItem('insha_side') === '0') $('nav').classList.add('collapsed'); });
-  safe(loadLockPrefs); safe(bind); safe(bindMessages); safe(bindPullToRefresh); safe(setupKeyboard); safe(syncNotify); safe(() => setAuthMode('login')); safe(ri);
-}
-const start = () => {
-  if (F()) boot();
-  else { window.addEventListener('fb-ready', boot, { once: true }); setTimeout(() => { if (!S.booted) fallbackToAuth('fb-timeout', 'Could not reach Firebase. Check your connection and reload.'); }, BOOT_TIMEOUT_MS + 2000); }
-};
-document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', start) : start();
+  window.addEventListener('pagehide', () => setPresence(false));
+  window.addEventListener('blur', () => setPresence(false));
+  window.addEventListener('focus', () => {
+    beat();
+    if (S.active) S.unread[S.active] = 0;
+    updateTitle();
+    sched('list');
+    scrollToBottom(true);
+  });
+  setInterval(beat, 30000);
+  setInterval(() => {
+    if (S.peers.size && !document.hidden) sched('head', 'list');
+  }, 20000);
+
+  /* ============================================================
+   *  BOOT
+   * ============================================================ */
+  function boot() {
+    if (S.booted) return;
+    S.booted = true;
+    const { auth, onAuthStateChanged } = F();
+    const bootTimer = setTimeout(() => {
+      if (!S.authResolved) fallbackToAuth('boot-timeout');
+    }, BOOT_TIMEOUT_MS);
+
+    const qp = new URLSearchParams(location.search);
+    S.pendingPair = parseCode(qp.get('pair'));
+    S.pendingPeer = qp.get('peer');
+    if (qp.has('pair') || qp.has('peer')) {
+      history.replaceState(null, '', location.pathname);
+    }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('firebase-messaging-sw.js')
+        .then((r) => { S.swReg = r; setupPush(); })
+        .catch((e) => console.warn('[sw]', e.message));
+      navigator.serviceWorker.addEventListener('message', (e) => {
+        if (e.data && e.data.type === 'open') openFromNotification(e.data);
+      });
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (S.registering) return;
+      S.authResolved = true;
+      clearTimeout(bootTimer);
+      try {
+        if (user) {
+          await enterOnce(user);
+          window.dispatchEvent(new Event('insha-signed-in'));
+        } else {
+          leave();
+        }
+      } catch (e) {
+        console.error('[auth] enter failed:', e);
+        fallbackToAuth('enter-failed', 'Could not load your account: ' + (e.message || e.code || 'unknown error'));
+      }
+    });
+
+    const safe = (fn) => { try { fn(); } catch (e) { console.error('[boot step]', e); } };
+    safe(() => {
+      if (localStorage.getItem('insha_side') === '0') $('nav').classList.add('collapsed');
+    });
+    safe(loadLockPrefs);
+    safe(bind);
+    safe(bindMessages);
+    safe(bindPullToRefresh);
+    safe(setupKeyboard);
+    safe(syncNotify);
+    safe(() => setAuthMode('login'));
+    safe(ri);
+  }
+
+  const start = () => {
+    if (F()) boot();
+    else {
+      window.addEventListener('fb-ready', boot, { once: true });
+      setTimeout(() => {
+        if (!S.booted) fallbackToAuth('fb-timeout', 'Could not reach Firebase. Check your connection and reload.');
+      }, BOOT_TIMEOUT_MS + 2000);
+    }
+  };
+
+  document.readyState === 'loading'
+    ? document.addEventListener('DOMContentLoaded', start)
+    : start();
 })();
 </script>
 </body>
